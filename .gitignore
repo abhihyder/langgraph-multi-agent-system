@@ -57,3 +57,6 @@ logs/
 
 # LangSmith / Observability
 .langsmith/
+
+# Node modules (for frontend)
+frontend/node_modules
