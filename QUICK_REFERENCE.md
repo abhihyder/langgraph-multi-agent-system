@@ -41,7 +41,7 @@ multi-agent/
 │   ├── main.py          # Entry point - START HERE
 │   ├── graph.py         # LangGraph workflow
 │   ├── state.py         # State schema
-│   ├── router.py        # Boss agent
+│   ├── router.py        # Orchestrator agent
 │   ├── aggregator.py    # Output synthesis
 │   └── agents/
 │       ├── research.py  # Facts & analysis
@@ -109,13 +109,13 @@ print(result["final_output"])
 OPENAI_API_KEY=sk-...
 
 # Optional model selection
-BOSS_MODEL=gpt-4
+ORCHESTRATOR_MODEL=gpt-4
 RESEARCH_MODEL=gpt-4
 WRITING_MODEL=gpt-4
 CODE_MODEL=gpt-4
 
 # Optional temperature tuning
-BOSS_TEMPERATURE=0      # Deterministic
+ORCHESTRATOR_TEMPERATURE=0      # Deterministic
 RESEARCH_TEMPERATURE=0.3
 WRITING_TEMPERATURE=0.7  # More creative
 CODE_TEMPERATURE=0.2
@@ -140,8 +140,8 @@ nano prompts/writing.md
 # Code Agent
 nano prompts/code.md
 
-# Boss Agent
-nano prompts/boss.md
+# Orchestrator Agent
+nano prompts/orchestrator.md
 ```
 
 ## Adding a New Agent
@@ -178,7 +178,7 @@ workflow.add_edge("new", "aggregator")
 
 ### 4. Update Router
 ```python
-# prompts/boss.md
+# prompts/orchestrator.md
 # Add new agent to available agents list
 ```
 
@@ -207,7 +207,7 @@ TIMEOUT=300  # Increase to 5 minutes
 ### Issue: Slow Responses
 ```python
 # Use faster models
-BOSS_MODEL=gpt-3.5-turbo
+ORCHESTRATOR_MODEL=gpt-3.5-turbo
 RESEARCH_MODEL=gpt-3.5-turbo
 ```
 

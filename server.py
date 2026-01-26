@@ -20,7 +20,7 @@ load_dotenv()
 # Initialize FastAPI app
 app = FastAPI(
     title="Agentic AI System API",
-    description="Multi-agent AI system with Boss-Agent architecture",
+    description="Multi-agent AI system with Orchestrator-Agent architecture",
     version="1.0.0"
 )
 

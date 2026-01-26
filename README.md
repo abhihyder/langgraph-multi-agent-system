@@ -1,6 +1,6 @@
 # Multi-Agent AI System with LangGraph
 
-A production-ready agentic AI system using **LangGraph** with NGINX-style architecture, where a **Boss (Router) Agent** delegates tasks to specialized agents.
+A production-ready agentic AI system using **LangGraph** with NGINX-style architecture, where an **Orchestrator (Router) Agent** delegates tasks to specialized agents.
 
 **🎨 Now with a beautiful web UI!** Chat interface built with FastAPI + React.
 
@@ -9,7 +9,7 @@ A production-ready agentic AI system using **LangGraph** with NGINX-style archit
 ```
 User Input (Web UI / CLI)
    ↓
-Boss Agent (Router)
+Orchestrator Agent (Router)
    ↓ (conditional routing)
 ┌───────────────┬───────────────┬───────────────┐
 │ ResearchAgent │ WritingAgent  │ CodeAgent     │
@@ -22,9 +22,9 @@ Final Response (Web UI / CLI)
 
 ### Key Principles
 
-- **Boss Agent never answers directly** - Only routes to specialists
+- **Orchestrator Agent never answers directly** - Only routes to specialists
 - **Specialized agents don't communicate** - Clean separation of concerns
-- **Boss controls flow** - Orchestrates everything
+- **Orchestrator controls flow** - Orchestrates everything
 - **State is explicit** - Shared state passed between nodes
 
 ## 🎯 Features
@@ -36,7 +36,7 @@ Final Response (Web UI / CLI)
   - **Writing Agent**: Creates well-structured, human-friendly content
   - **Code Agent**: Generates production-quality code
 - **🎨 Markdown Support**: Full markdown rendering with syntax-highlighted code blocks
-- **🔀 Smart Routing**: Boss agent determines which agents to invoke
+- **🔀 Smart Routing**: Orchestrator agent determines which agents to invoke
 - **🔄 Intelligent Aggregation**: Synthesizes multiple agent outputs
 - **⚡ REST API**: FastAPI backend for easy integration
 
@@ -131,7 +131,7 @@ multi-agent/
 │   ├── main.py              # CLI entry point
 │   ├── graph.py             # LangGraph workflow
 │   ├── state.py             # Shared state schema
-│   ├── router.py            # Boss agent logic
+│   ├── router.py            # Orchestrator agent logic
 │   ├── aggregator.py        # Response synthesis
 │   └── agents/              # Specialized agents
 │       ├── research.py
@@ -148,7 +148,7 @@ multi-agent/
 │   └── vite.config.js
 │
 ├── prompts/                 # Agent instructions
-│   ├── boss.md
+│   ├── orchestrator.md
 │   ├── research.md
 │   ├── writing.md
 │   └── code.md
@@ -163,28 +163,28 @@ multi-agent/
 from app import run_agent_system
 
 response = run_agent_system("Compare SQL and NoSQL databases")
-# Boss routes to: Research Agent
+# Orchestrator routes to: Research Agent
 ```
 
 ### Writing Task
 
 ```python
 response = run_agent_system("Write an explanation of machine learning")
-# Boss routes to: Research Agent → Writing Agent
+# Orchestrator routes to: Research Agent → Writing Agent
 ```
 
 ### Code Generation
 
 ```python
 response = run_agent_system("Create a FastAPI endpoint for user authentication")
-# Boss routes to: Code Agent
+# Orchestrator routes to: Code Agent
 ```
 
 ### Complex Multi-Agent Task
 
 ```python
 response = run_agent_system("Compare Python web frameworks and show example code for FastAPI")
-# Boss routes to: Research Agent → Code Agent → Aggregator
+# Orchestrator routes to: Research Agent → Code Agent → Aggregator
 ```
 
 ## 🎨 Markdown & Code Rendering
@@ -217,28 +217,28 @@ def read_root():
 
 All rendered beautifully in the chat UI! ✨
 response = run_agent_system("Compare SQL and NoSQL databases")
-# Boss routes to: Research Agent
+# Orchestrator routes to: Research Agent
 ```
 
 ### Example 2: Writing Task
 
 ```python
 response = run_agent_system("Write an explanation of machine learning")
-# Boss routes to: Research Agent → Writing Agent
+# Orchestrator routes to: Research Agent → Writing Agent
 ```
 
 ### Example 3: Code Generation
 
 ```python
 response = run_agent_system("Create a FastAPI endpoint for user authentication")
-# Boss routes to: Code Agent
+# Orchestrator routes to: Code Agent
 ```
 
 ### Complex Multi-Agent Task
 
 ```python
 response = run_agent_system("Compare Python web frameworks and show example code for FastAPI")
-# Boss routes to: Research Agent → Code Agent → Aggregator
+# Orchestrator routes to: Research Agent → Code Agent → Aggregator
 ```
 
 ## 🎨 Markdown & Code Rendering
@@ -280,7 +280,7 @@ Edit `config/settings.py` or set environment variables in `.env`:
 OPENAI_API_KEY=your-api-key-here
 
 # Optional: Model selection
-BOSS_MODEL=gpt-4o-mini
+ORCHESTRATOR_MODEL=gpt-4o-mini
 RESEARCH_MODEL=gpt-4o-mini
 WRITING_MODEL=gpt-4o-mini
 CODE_MODEL=gpt-4o-mini
@@ -337,7 +337,7 @@ Edit `config/settings.py` or set environment variables in `.env`:
 
 ```bash
 # Models
-BOSS_MODEL=gpt-4
+ORCHESTRATOR_MODEL=gpt-4
 RESEARCH_MODEL=gpt-4
 WRITING_MODEL=gpt-4
 ### Web Interface
@@ -388,7 +388,7 @@ def custom_agent(state: AgentState) -> Dict[str, Any]:
 workflow.add_node("custom", custom_agent)
 ```
 
-4. Update routing logic in boss prompt
+4. Update routing logic in orchestrator prompt
 
 ## 🧪 Testing
 
@@ -492,7 +492,7 @@ If you find this project helpful, please give it a star! It helps others discove
 ## 📝 Development Notes
 
 - Each agent writes ONLY to its designated state field
-- Boss agent never generates content
+- Orchestrator agent never generates content
 - Aggregator runs after all agents complete
 - Parallel execution supported for multiple agents
 - State is immutable per node (updates merged)

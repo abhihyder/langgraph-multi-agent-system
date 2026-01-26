@@ -8,7 +8,7 @@ def load_prompt(filename: str) -> str:
     Load prompt template from file
     
     Args:
-        filename: Name of the prompt file (e.g., 'boss.md')
+        filename: Name of the prompt file (e.g., 'orchestrator.md')
         
     Returns:
         Content of the prompt file

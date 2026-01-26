@@ -10,7 +10,7 @@ multi-agent/
 │       ├── __init__.py                 # Package init
 │       ├── main.py                     # Entry point & CLI ⭐
 │       ├── state.py                    # State schema
-│       ├── router.py                   # Boss Agent ⭐
+│       ├── router.py                   # Orchestrator Agent ⭐
 │       ├── aggregator.py               # Output synthesis ⭐
 │       ├── graph.py                    # LangGraph workflow ⭐
 │       └── agents/
@@ -21,7 +21,7 @@ multi-agent/
 │
 ├── 📝 PROMPTS (4 files)
 │   └── prompts/
-│       ├── boss.md                     # Boss instructions
+│       ├── orchestrator.md                     # Orchestrator instructions
 │       ├── research.md                 # Research instructions
 │       ├── writing.md                  # Writing instructions
 │       └── code.md                     # Code instructions
@@ -97,7 +97,7 @@ multi-agent/
 
 ### 🧩 Core Agents (4 agents)
 
-1. **Boss Agent** (`app/router.py`)
+1. **Orchestrator Agent** (`app/router.py`)
    - Routes to specialists
    - Never answers directly
 
@@ -115,7 +115,7 @@ multi-agent/
 ```python
 AgentState = {
     "user_input": str,         # User query
-    "intent": str,             # Boss interpretation
+    "intent": str,             # Orchestrator interpretation
     "selected_agents": list,   # Chosen agents
     "research_output": str,    # Research result
     "writing_output": str,     # Writing result
@@ -132,7 +132,7 @@ AgentState = {
 └──────┬──────┘
        ↓
 ┌─────────────┐
-│ Boss Agent  │ (analyzes & routes)
+│ Orchestrator Agent  │ (analyzes & routes)
 └──────┬──────┘
        ↓
 ┌──────────────────────────────┐
@@ -182,7 +182,7 @@ AgentState = {
 ### For Understanding the Code
 1. `app/main.py` - Entry point
 2. `app/graph.py` - Workflow orchestration
-3. `app/router.py` - Boss agent logic
+3. `app/router.py` - Orchestrator agent logic
 4. `app/agents/` - Specialized agents
 5. `ARCHITECTURE.md` - System design
 

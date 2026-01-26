@@ -1,6 +1,6 @@
 # Agentic AI System with LangGraph – Complete Implementation Guide
 
-> **Goal**: Build a production-ready, NGINX-style agentic AI system using **LangGraph**, where a **Boss (Router) Agent** delegates tasks to **specialized agents** (Research, Writing, Code), aggregates their outputs, and returns a final response to the user.
+> **Goal**: Build a production-ready, NGINX-style agentic AI system using **LangGraph**, where a **Orchestrator (Router) Agent** delegates tasks to **specialized agents** (Research, Writing, Code), aggregates their outputs, and returns a final response to the user.
 
 This document is written so that **another AI agent** (or a human engineer) can follow it **step by step** and build the full project end-to-end.
 
@@ -13,7 +13,7 @@ This document is written so that **another AI agent** (or a human engineer) can 
 ```
 User Input
    ↓
-Boss Agent (Router)
+Orchestrator Agent (Router)
    ↓ (conditional routing)
 ┌───────────────┬───────────────┬───────────────┐
 │ ResearchAgent │ WritingAgent  │ CodeAgent     │
@@ -26,9 +26,9 @@ Final Response to User
 
 ### Key Principles
 
-* Boss agent **never answers directly**
+* Orchestrator agent **never answers directly**
 * Specialized agents **do not talk to each other**
-* Boss agent **controls flow + aggregation**
+* Orchestrator agent **controls flow + aggregation**
 * State is **explicit and shared**
 
 ---
@@ -60,7 +60,7 @@ agentic-ai/
 │   ├── main.py                 # Entry point
 │   ├── graph.py                # LangGraph definition
 │   ├── state.py                # Shared state schema
-│   ├── router.py               # Boss agent logic
+│   ├── router.py               # Orchestrator agent logic
 │   ├── aggregator.py           # Response synthesis
 │   └── agents/
 │       ├── research.py         # Research agent
@@ -68,7 +68,7 @@ agentic-ai/
 │       └── code.py             # Code agent
 │
 ├── prompts/
-│   ├── boss.md
+│   ├── orchestrator.md
 │   ├── research.md
 │   ├── writing.md
 │   └── code.md
@@ -109,11 +109,11 @@ class AgentState(TypedDict):
 
 * Each agent **only writes its own field**
 * No agent overwrites another agent’s output
-* Boss agent decides `selected_agents`
+* Orchestrator agent decides `selected_agents`
 
 ---
 
-## 4. Boss Agent (Router)
+## 4. Orchestrator Agent (Router)
 
 ### Responsibilities
 
@@ -199,10 +199,10 @@ Example rules:
 
 ## 6. Prompt Design (Non-Negotiable)
 
-### Boss Prompt (boss.md)
+### Orchestrator Prompt (orchestrator.md)
 
 ```
-You are the Boss Agent.
+You are the Orchestrator Agent.
 Your job is to analyze the user input and decide which specialized agents are required.
 Return ONLY a JSON object with intent and selected_agents.
 Never answer the user directly.
@@ -244,7 +244,7 @@ Follow best practices and avoid pseudocode unless requested.
 
 ### Nodes
 
-* boss_router
+* orchestrator_router
 * research_agent
 * writing_agent
 * code_agent
@@ -252,8 +252,8 @@ Follow best practices and avoid pseudocode unless requested.
 
 ### Edges
 
-* Entry → boss_router
-* boss_router → conditional fan-out
+* Entry → orchestrator_router
+* orchestrator_router → conditional fan-out
 * agents → aggregator
 * aggregator → END
 
@@ -312,7 +312,7 @@ Supports:
 1. Receive user input
 2. Initialize state
 3. Invoke LangGraph
-4. Boss agent selects agents
+4. Orchestrator agent selects agents
 5. Agents execute (parallel if needed)
 6. Aggregator synthesizes
 7. Return final_output

@@ -134,7 +134,7 @@ Edit `.env` to customize models:
 
 ```bash
 # Use GPT-3.5 for faster/cheaper responses
-BOSS_MODEL=gpt-3.5-turbo
+ORCHESTRATOR_MODEL=gpt-3.5-turbo
 RESEARCH_MODEL=gpt-3.5-turbo
 WRITING_MODEL=gpt-4
 CODE_MODEL=gpt-4
@@ -206,7 +206,7 @@ multi-agent/
 │   ├── main.py            # Entry point
 │   ├── graph.py           # LangGraph workflow
 │   ├── state.py           # Shared state
-│   ├── router.py          # Boss agent
+│   ├── router.py          # Orchestrator agent
 │   ├── aggregator.py      # Output synthesis
 │   └── agents/            # Specialized agents
 │       ├── research.py

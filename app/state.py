@@ -14,11 +14,11 @@ class AgentState(TypedDict):
     
     Attributes:
         user_input: Original user query
-        intent: Boss agent's interpretation of user intent
+        intent: Orchestrator agent's interpretation of user intent
         research_output: Output from research agent
         writing_output: Output from writing agent
         code_output: Output from code agent
-        selected_agents: List of agents selected by boss
+        selected_agents: List of agents selected by orchestrator
         final_output: Aggregated final response
     """
     user_input: str

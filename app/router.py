@@ -1,7 +1,7 @@
 """
-Boss Agent (Router) - Analyzes user input and routes to appropriate agents
+Orchestrator Agent (Router) - Analyzes user input and routes to appropriate agents
 
-The Boss Agent NEVER answers questions directly. It only:
+The Orchestrator Agent NEVER answers questions directly. It only:
 1. Analyzes the user's intent
 2. Decides which specialized agents are needed
 3. Updates the state with selected agents
@@ -16,9 +16,9 @@ from .state import AgentState
 from .utils import load_prompt
 
 
-def boss_router(state: AgentState) -> Dict[str, Any]:
+def orchestrator_router(state: AgentState) -> Dict[str, Any]:
     """
-    Boss agent that routes requests to appropriate specialized agents.
+    Orchestrator agent that routes requests to appropriate specialized agents.
     
     Args:
         state: Current agent state with user input
@@ -28,15 +28,15 @@ def boss_router(state: AgentState) -> Dict[str, Any]:
     """
     user_input = state["user_input"]
     
-    # Load boss prompt
-    boss_prompt = load_prompt("boss.md")
+    # Load orchestrator prompt
+    orchestrator_prompt = load_prompt("orchestrator.md")
     
     # Initialize LLM
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     
     # Create messages
     messages = [
-        SystemMessage(content=boss_prompt),
+        SystemMessage(content=orchestrator_prompt),
         HumanMessage(content=f"User input: {user_input}")
     ]
     
@@ -60,7 +60,7 @@ def boss_router(state: AgentState) -> Dict[str, Any]:
             "selected_agents": routing_decision.get("selected_agents", [])
         }
     except json.JSONDecodeError as e:
-        print(f"Error parsing boss response: {e}")
+        print(f"Error parsing orchestrator response: {e}")
         print(f"Response content: {response.content}")
         # Fallback: route to writing agent
         return {

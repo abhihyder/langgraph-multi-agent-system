@@ -1,7 +1,7 @@
 # Agentic AI System - Development Progress
 
 ## Project Overview
-Building a production-ready agentic AI system using LangGraph with Boss-Agent architecture.
+Building a production-ready agentic AI system using LangGraph with Orchestrator-Agent architecture.
 
 ## Progress Tracker
 
@@ -15,11 +15,11 @@ Building a production-ready agentic AI system using LangGraph with Boss-Agent ar
 - [x] Dependencies and requirements (requirements.txt)
 - [x] Shared state schema (app/state.py)
 - [x] Prompt templates (prompts/*.md)
-  - [x] Boss agent prompt
+  - [x] Orchestrator agent prompt
   - [x] Research agent prompt
   - [x] Writing agent prompt
   - [x] Code agent prompt
-- [x] Boss agent router (app/router.py)
+- [x] Orchestrator agent router (app/router.py)
 - [x] Specialized agents (app/agents/)
   - [x] Research agent
   - [x] Writing agent
@@ -37,7 +37,7 @@ Building a production-ready agentic AI system using LangGraph with Boss-Agent ar
 
 ### Architecture Implemented
 ```
-User Input → Boss Agent (Router) → Specialized Agents → Aggregator → Final Output
+User Input → Orchestrator Agent (Router) → Specialized Agents → Aggregator → Final Output
 ```
 
 ### Key Components
@@ -47,7 +47,7 @@ User Input → Boss Agent (Router) → Specialized Agents → Aggregator → Fin
    - Each agent writes to its own field
    - Immutable state updates
 
-2. **Boss Agent** (`app/router.py`)
+2. **Orchestrator Agent** (`app/router.py`)
    - Analyzes user intent
    - Routes to appropriate agents
    - JSON-based output format
@@ -65,7 +65,7 @@ User Input → Boss Agent (Router) → Specialized Agents → Aggregator → Fin
    - Creates coherent final response
 
 5. **LangGraph Workflow** (`app/graph.py`)
-   - Conditional routing from boss
+   - Conditional routing from orchestrator
    - Parallel agent execution support
    - Fan-in to aggregator
    - Compiled graph ready for execution
@@ -76,7 +76,7 @@ User Input → Boss Agent (Router) → Specialized Agents → Aggregator → Fin
 - `app/__init__.py` - Package initialization
 - `app/main.py` - Entry point & CLI interface
 - `app/state.py` - Shared state schema
-- `app/router.py` - Boss agent logic
+- `app/router.py` - Orchestrator agent logic
 - `app/aggregator.py` - Output synthesis
 - `app/graph.py` - LangGraph workflow
 - `app/agents/__init__.py` - Agent package
@@ -85,7 +85,7 @@ User Input → Boss Agent (Router) → Specialized Agents → Aggregator → Fin
 - `app/agents/code.py` - Code agent
 
 #### Prompts
-- `prompts/boss.md` - Boss agent system prompt
+- `prompts/orchestrator.md` - Orchestrator agent system prompt
 - `prompts/research.md` - Research agent prompt
 - `prompts/writing.md` - Writing agent prompt
 - `prompts/code.md` - Code agent prompt
@@ -158,7 +158,7 @@ Your question: Compare frameworks --verbose
 ### Design Patterns Used
 - **State Pattern**: Shared mutable state between nodes
 - **Strategy Pattern**: Different agents for different tasks
-- **Chain of Responsibility**: Boss → Agents → Aggregator
+- **Chain of Responsibility**: Orchestrator → Agents → Aggregator
 - **Facade Pattern**: Main entry point abstracts complexity
 
 ### LangGraph Features
@@ -180,7 +180,7 @@ Your question: Compare frameworks --verbose
 1. **Separation of Concerns**: Each agent has a single responsibility
 2. **Explicit State**: TypedDict makes state flow clear
 3. **Prompt Engineering**: Specific prompts prevent agent drift
-4. **Boss Never Answers**: Ensures consistent routing
+4. **Orchestrator Never Answers**: Ensures consistent routing
 5. **Aggregation Matters**: Quality synthesis improves final output
 
 ## Architecture Benefits
@@ -200,7 +200,7 @@ Your question: Compare frameworks --verbose
 - ✅ `app/__init__.py` - Package initialization
 - ✅ `app/main.py` - Entry point & CLI (165 lines)
 - ✅ `app/state.py` - Shared state schema (29 lines)
-- ✅ `app/router.py` - Boss agent logic (71 lines)
+- ✅ `app/router.py` - Orchestrator agent logic (71 lines)
 - ✅ `app/aggregator.py` - Output synthesis (98 lines)
 - ✅ `app/graph.py` - LangGraph workflow (70 lines)
 - ✅ `app/agents/__init__.py` - Agent exports
@@ -209,7 +209,7 @@ Your question: Compare frameworks --verbose
 - ✅ `app/agents/code.py` - Code agent (63 lines)
 
 ### Prompts (4 files)
-- ✅ `prompts/boss.md` - Boss agent instructions
+- ✅ `prompts/orchestrator.md` - Orchestrator agent instructions
 - ✅ `prompts/research.md` - Research agent instructions
 - ✅ `prompts/writing.md` - Writing agent instructions
 - ✅ `prompts/code.md` - Code agent instructions
@@ -240,7 +240,7 @@ Your question: Compare frameworks --verbose
 
 ### ✅ Fully Functional Features
 
-1. **Boss Agent Router**
+1. **Orchestrator Agent Router**
    - Analyzes user intent
    - Routes to appropriate agents
    - JSON-based decision making
@@ -423,7 +423,7 @@ This means:
 ✅ Built based on INSTRUCTION.md requirements
 ✅ Simple but fully functional
 ✅ Production-ready structure
-✅ Boss-Agent architecture implemented
+✅ Orchestrator-Agent architecture implemented
 ✅ Three specialized agents working
 ✅ LangGraph workflow operational
 ✅ State management correct

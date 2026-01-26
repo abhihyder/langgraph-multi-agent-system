@@ -12,7 +12,7 @@
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    BOSS AGENT (Router)                      │
+│                    ORCHESTRATOR AGENT (Router)                      │
 │  • Analyzes intent                                          │
 │  • Selects agents: ["research", "writing"]                 │
 │  • NEVER generates content                                  │
@@ -62,7 +62,7 @@
     "final_output": None
 }
 
-# After Boss Agent
+# After Orchestrator Agent
 {
     "user_input": "What is Docker?",
     "intent": "educational explanation about Docker",
@@ -109,7 +109,7 @@
 
 ## Component Details
 
-### 1. Boss Agent (Router)
+### 1. Orchestrator Agent (Router)
 
 **Location**: `app/router.py`
 
@@ -232,7 +232,7 @@ Keywords/Intent → Agent Selection
 workflow = StateGraph(AgentState)
 
 # Nodes
-workflow.add_node("boss", boss_router)
+workflow.add_node("orchestrator", orchestrator_router)
 workflow.add_node("research", research_agent)
 workflow.add_node("writing", writing_agent)
 workflow.add_node("code", code_agent)
@@ -243,11 +243,11 @@ workflow.add_node("aggregator", aggregator)
 
 ```python
 # Entry point
-workflow.set_entry_point("boss")
+workflow.set_entry_point("orchestrator")
 
 # Conditional routing
 workflow.add_conditional_edges(
-    "boss",
+    "orchestrator",
     route_to_agents,
     {
         "research": "research",
@@ -270,19 +270,19 @@ workflow.add_edge("aggregator", END)
 
 **Example 1: Research Only**
 ```
-User → Boss → Research → Aggregator → Output
+User → Orchestrator → Research → Aggregator → Output
 ```
 
 **Example 2: Research + Writing**
 ```
-User → Boss → [Research, Writing] → Aggregator → Output
+User → Orchestrator → [Research, Writing] → Aggregator → Output
                      ↓           ↓
                      └───────────┘ (parallel)
 ```
 
 **Example 3: All Agents**
 ```
-User → Boss → [Research, Writing, Code] → Aggregator → Output
+User → Orchestrator → [Research, Writing, Code] → Aggregator → Output
                      ↓        ↓       ↓
                      └────────┴───────┘ (parallel)
 ```
@@ -300,7 +300,7 @@ User → Boss → [Research, Writing, Code] → Aggregator → Output
 - No hidden state or memory
 
 ### 3. Deterministic Routing
-- Boss agent uses rules (can upgrade to LLM)
+- Orchestrator agent uses rules (can upgrade to LLM)
 - Predictable behavior
 - Easy to debug
 
@@ -333,7 +333,7 @@ User → Boss → [Research, Writing, Code] → Aggregator → Output
 
 ### Vertical Scaling
 - Cache LLM responses
-- Use faster models for boss
+- Use faster models for orchestrator
 - Parallel agent execution
 - Async/await for I/O
 
@@ -364,7 +364,7 @@ User → Boss → [Research, Writing, Code] → Aggregator → Output
 
 | Component | Typical Time | Notes |
 |-----------|-------------|-------|
-| Boss Agent | 1-2s | Fast, low temperature |
+| Orchestrator Agent | 1-2s | Fast, low temperature |
 | Research Agent | 3-5s | Comprehensive |
 | Writing Agent | 4-6s | Creative |
 | Code Agent | 3-7s | Depends on complexity |
@@ -382,7 +382,7 @@ User → Boss → [Research, Writing, Code] → Aggregator → Output
 ## Error Handling
 
 ### Current Implementation
-- Basic try/catch in boss router
+- Basic try/catch in orchestrator router
 - Fallback to writing agent on error
 - Error messages returned to user
 
@@ -430,7 +430,7 @@ with timeout(30):
 
 ### Logging Strategy
 ```python
-logger.info("Boss selected agents", agents=selected_agents)
+logger.info("Orchestrator selected agents", agents=selected_agents)
 logger.info("Research completed", tokens=usage)
 logger.error("Aggregation failed", error=e)
 ```

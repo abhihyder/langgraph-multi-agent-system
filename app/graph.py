@@ -2,7 +2,7 @@
 LangGraph Workflow Definition
 
 This file constructs the LangGraph with:
-- Boss router node
+- Orchestrator router node
 - Specialized agent nodes
 - Aggregator node
 - Conditional routing logic
@@ -12,7 +12,7 @@ from typing import Literal
 from langgraph.graph import StateGraph, END
 
 from .state import AgentState
-from .router import boss_router
+from .router import orchestrator_router
 from .agents import research_agent, writing_agent, code_agent
 from .aggregator import aggregator
 
@@ -20,7 +20,7 @@ from .aggregator import aggregator
 def route_to_agents(state: AgentState) -> list[str]:
     """
     Conditional routing function that determines which agents to execute.
-    Returns list of agent names based on boss router decision.
+    Returns list of agent names based on orchestrator router decision.
     """
     selected = state.get("selected_agents", [])
     if not selected:
@@ -39,18 +39,18 @@ def build_graph():
     workflow = StateGraph(AgentState)
     
     # Add nodes
-    workflow.add_node("boss", boss_router)
+    workflow.add_node("orchestrator", orchestrator_router)
     workflow.add_node("research", research_agent)
     workflow.add_node("writing", writing_agent)
     workflow.add_node("code", code_agent)
     workflow.add_node("aggregator", aggregator)
     
     # Set entry point
-    workflow.set_entry_point("boss")
+    workflow.set_entry_point("orchestrator")
     
-    # Add conditional edges from boss to specialized agents
+    # Add conditional edges from orchestrator to specialized agents
     workflow.add_conditional_edges(
-        "boss",
+        "orchestrator",
         route_to_agents,
         {
             "research": "research",
