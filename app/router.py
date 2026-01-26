@@ -13,12 +13,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from .state import AgentState
-
-
-def load_prompt(filename: str) -> str:
-    """Load prompt template from file"""
-    with open(f"prompts/{filename}", "r") as f:
-        return f.read()
+from .utils import load_prompt
 
 
 def boss_router(state: AgentState) -> Dict[str, Any]:
