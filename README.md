@@ -32,9 +32,10 @@ Final Response (Web UI / CLI)
 - **🌐 Web Interface**: Beautiful chat UI with markdown rendering and syntax highlighting
 - **💻 CLI Interface**: Interactive command-line interface
 - **🤖 Three Specialized Agents**:
-  - **Research Agent**: Provides factual information, comparisons, and analysis
+  - **Research Agent**: Provides factual information, comparisons, and analysis (with optional MCP tool support)
   - **Writing Agent**: Creates well-structured, human-friendly content
   - **Code Agent**: Generates production-quality code
+- **🔧 Optional MCP Integration**: Research agent can connect to external tools when configured
 - **🎨 Markdown Support**: Full markdown rendering with syntax-highlighted code blocks
 - **🔀 Smart Routing**: Boss agent determines which agents to invoke
 - **🔄 Intelligent Aggregation**: Synthesizes multiple agent outputs
@@ -45,6 +46,7 @@ Final Response (Web UI / CLI)
 - Python 3.10+
 - Node.js 16+ (for web UI)
 - **OpenAI API key** (Required - Get one at https://platform.openai.com/api-keys)
+- **MCP library** (Optional - for external tool support: `pip install mcp`)
 
 ## 🚀 Quick Start
 
@@ -457,12 +459,47 @@ For production deployment, consider adding:
 
 - [SETUP_GUIDE.md](SETUP_GUIDE.md) - Detailed setup instructions
 - [CHAT_SETUP.md](CHAT_SETUP.md) - Web UI setup guide
-- [MARKDOWN_SUPPORT.md](MARKDOWN_SUPPORT.md) - Markdown  - LLM framework
+- [MARKDOWN_SUPPORT.md](MARKDOWN_SUPPORT.md) - Markdown rendering guide
+- [MCP_INTEGRATION.md](docs/MCP_INTEGRATION.md) - External tool integration (optional)
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Production deployment guide
+
+## 🔧 Advanced Features
+
+### MCP Integration (Optional)
+
+Enable external tool calling for the research agent:
+
+```bash
+# Install MCP library
+pip install mcp
+
+# Configure in .env
+MCP_SERVER_COMMAND=npx
+MCP_SERVER_ARGS=-y @modelcontextprotocol/server-brave-search
+
+# Add Brave API key (if using web search)
+export BRAVE_API_KEY=your-api-key
+```
+
+**Capabilities with MCP:**
+- 🔍 Web search for current information
+- 📁 Local file system access
+- 🗄️ Database queries
+- 🔧 Custom tool integrations
+
+See [MCP_INTEGRATION.md](docs/MCP_INTEGRATION.md) for full setup guide.
+
+**Note:** System works fully without MCP. Enable only when you need external tools.
+
+## 🛠️ Built With
+
+- [LangChain](https://langchain.com/) - LLM framework
 - [LangGraph](https://github.com/langchain-ai/langgraph) - Workflow orchestration
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
 - [React](https://react.dev/) - Frontend UI library
 - [Vite](https://vitejs.dev/) - Fast build tool
 - [OpenAI GPT-4](https://openai.com/) - Language models
+- [MCP](https://modelcontextprotocol.io/) - Model Context Protocol (optional)
 
 ## ⭐ Star this Repository
 
