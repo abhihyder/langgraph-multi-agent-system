@@ -44,7 +44,7 @@ Final Response (Web UI / CLI)
 
 - Python 3.10+
 - Node.js 16+ (for web UI)
-- OpenAI API key
+- **OpenAI API key** (Required - Get one at https://platform.openai.com/api-keys)
 
 ## 🚀 Quick Start
 
@@ -65,7 +65,8 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Edit .env and add your OPENAI_API_KEY (REQUIRED)
+# Get your key from: https://platform.openai.com/api-keys
 ```
 
 #### Step 2: Start FastAPI Server
@@ -231,7 +232,51 @@ response = run_agent_system("Write an explanation of machine learning")
 ```python
 response = run_agent_system("Create a FastAPI endpoint for user authentication")
 # Boss routes to: Code Agent
-``Required
+```
+
+### Complex Multi-Agent Task
+
+```python
+response = run_agent_system("Compare Python web frameworks and show example code for FastAPI")
+# Boss routes to: Research Agent → Code Agent → Aggregator
+```
+
+## 🎨 Markdown & Code Rendering
+
+The web UI supports full markdown rendering with syntax highlighting:
+
+- **Headings**: H1, H2, H3 with custom styling
+- **Text formatting**: Bold, italic, strikethrough
+- **Lists**: Ordered and unordered
+- **Code blocks**: Syntax highlighting for 50+ languages
+- **Inline code**: `like this`
+- **Tables**: Full table support
+- **Blockquotes**: Styled quotes
+- **Links**: Auto-opening in new tabs
+
+Example AI response with code:
+
+````markdown
+## FastAPI Example
+
+```python
+from fastapi import FastAPI
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+```
+````
+
+All rendered beautifully in the chat UI! ✨
+
+## 🔧 Configuration
+
+Edit `config/settings.py` or set environment variables in `.env`:
+
+```bash
+# Required - You MUST set this
 OPENAI_API_KEY=your-api-key-here
 
 # Optional: Model selection
