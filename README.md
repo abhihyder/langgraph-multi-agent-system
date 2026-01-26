@@ -54,7 +54,7 @@ Final Response (Web UI / CLI)
 
 ```bash
 # Clone/navigate to project
-cd multi-agent
+cd langgraph-multi-agent-system
 
 # Create virtual environment
 python -m venv venv
