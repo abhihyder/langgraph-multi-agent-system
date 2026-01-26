@@ -1,8 +1,66 @@
 import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import './App.css'
 
 const API_URL = 'http://localhost:8000'
+
+// Markdown components with syntax highlighting
+const MarkdownComponents = {
+  code({ node, inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '')
+    const language = match ? match[1] : ''
+    
+    return !inline ? (
+      <SyntaxHighlighter
+        style={vscDarkPlus}
+        language={language}
+        PreTag="div"
+        className="code-block"
+        {...props}
+      >
+        {String(children).replace(/\n$/, '')}
+      </SyntaxHighlighter>
+    ) : (
+      <code className="inline-code" {...props}>
+        {children}
+      </code>
+    )
+  },
+  p({ children }) {
+    return <p className="markdown-paragraph">{children}</p>
+  },
+  h1({ children }) {
+    return <h1 className="markdown-h1">{children}</h1>
+  },
+  h2({ children }) {
+    return <h2 className="markdown-h2">{children}</h2>
+  },
+  h3({ children }) {
+    return <h3 className="markdown-h3">{children}</h3>
+  },
+  ul({ children }) {
+    return <ul className="markdown-list">{children}</ul>
+  },
+  ol({ children }) {
+    return <ol className="markdown-list">{children}</ol>
+  },
+  li({ children }) {
+    return <li className="markdown-list-item">{children}</li>
+  },
+  blockquote({ children }) {
+    return <blockquote className="markdown-blockquote">{children}</blockquote>
+  },
+  a({ href, children }) {
+    return <a href={href} className="markdown-link" target="_blank" rel="noopener noreferrer">{children}</a>
+  },
+  table({ children }) {
+    return <table className="markdown-table">{children}</table>
+  }
+}
 
 function App() {
   const [messages, setMessages] = useState([])
@@ -143,7 +201,18 @@ function App() {
                 {message.role === 'user' ? '👤' : message.role === 'error' ? '⚠️' : '🤖'}
               </div>
               <div className="message-content">
-                <div className="message-text">{message.content}</div>
+                <div className="message-text">
+                  {message.role === 'user' || message.role === 'error' ? (
+                    message.content
+                  ) : (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={MarkdownComponents}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  )}
+                </div>
                 <div className="message-timestamp">
                   {message.timestamp.toLocaleTimeString()}
                 </div>
