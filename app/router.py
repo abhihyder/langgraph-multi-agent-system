@@ -51,7 +51,7 @@ def boss_router(state: AgentState) -> Dict[str, Any]:
     # Parse JSON response
     try:
         # Extract JSON from response (handles markdown code blocks)
-        content = response.content.strip()
+        content = str(response.content).strip()
         if "```json" in content:
             content = content.split("```json")[1].split("```")[0].strip()
         elif "```" in content:

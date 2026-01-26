@@ -28,12 +28,12 @@ def route_to_agents(state: AgentState) -> list[str]:
     return selected
 
 
-def build_graph() -> StateGraph:
+def build_graph():
     """
     Build and compile the LangGraph workflow.
     
     Returns:
-        Compiled StateGraph ready for execution
+        Compiled graph ready for execution
     """
     # Create graph with shared state
     workflow = StateGraph(AgentState)
