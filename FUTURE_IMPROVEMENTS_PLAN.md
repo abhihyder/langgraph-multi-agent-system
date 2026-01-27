@@ -57,34 +57,53 @@ database/
 
 ### 1.2 User Authentication System
 
-**Objective**: Implement secure multi-user authentication
+**Objective**: Implement secure multi-user authentication with Google OAuth
 
 **Tasks**:
-- [ ] Install dependencies (fastapi, bcrypt, python-jose)
+- [ ] Install dependencies (fastapi, python-jose, authlib)
+- [ ] Set up Google OAuth 2.0 credentials (Google Cloud Console)
 - [ ] Create authentication endpoints:
-  - POST /auth/register
-  - POST /auth/login (returns JWT)
+  - GET /auth/google/login (redirect to Google)
+  - GET /auth/google/callback (handle Google response)
   - POST /auth/logout
   - GET /auth/me (get current user)
 - [ ] Implement JWT token generation/validation
-- [ ] Add password hashing (bcrypt)
+- [ ] Add Google OAuth flow
+- [ ] Store user profile from Google (email, name, picture)
 - [ ] Create authentication middleware
 - [ ] Add role-based access control (RBAC)
+- [ ] Optional: Support multiple OAuth providers (GitHub, Microsoft)
 
 **Files to Create**:
 ```
 app/auth/
 ├── __init__.py
 ├── routes.py           # Auth endpoints
-├── security.py         # JWT, password hashing
+├── oauth.py            # Google OAuth integration
+├── security.py         # JWT token management
 ├── dependencies.py     # Auth dependencies
 └── models.py           # User models
 ```
 
+**Google OAuth Setup**:
+1. Create project in Google Cloud Console
+2. Enable Google+ API
+3. Create OAuth 2.0 credentials
+4. Add authorized redirect URIs
+5. Store client ID and secret in `.env`
+
+**Environment Variables**:
+```
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+```
+
 **Success Criteria**:
-- Users can register and login
+- Users can login with Google account
 - JWT tokens working correctly
 - Protected routes require authentication
+- User profile synced from Google
 
 ---
 
@@ -903,35 +922,43 @@ app/supervisor/
 
 ### 9.1 Authentication UI
 
-**Objective**: User login/registration interface
+**Objective**: User login interface with Google Sign-In
 
 **Components**:
-- [ ] Login page
-- [ ] Registration page
-- [ ] Password reset flow
+- [ ] Login page with "Sign in with Google" button
 - [ ] User profile page
 - [ ] Session management
+- [ ] Auto-redirect after login
 
 **Files to Create**:
 ```
 frontend/src/
 ├── pages/
-│   ├── Login.jsx
-│   ├── Register.jsx
+│   ├── Login.jsx          # Google Sign-In button
 │   ├── Profile.jsx
-│   └── ResetPassword.jsx
+│   └── AuthCallback.jsx   # Handle OAuth callback
 ├── components/auth/
 │   ├── AuthGuard.jsx
-│   ├── LoginForm.jsx
-│   └── RegisterForm.jsx
+│   ├── GoogleLoginButton.jsx
+│   └── UserAvatar.jsx     # Display Google profile picture
 └── services/
-    └── auth.service.js
+    └── auth.service.js    # OAuth flow handling
 ```
 
+**Google OAuth Flow**:
+1. User clicks "Sign in with Google"
+2. Redirect to Google authorization page
+3. User approves access
+4. Google redirects to callback URL
+5. Frontend exchanges code for JWT token
+6. Store JWT in localStorage/cookies
+7. Redirect to dashboard
+
 **Success Criteria**:
-- Users can register/login
+- Users can login with Google
 - Sessions persist
 - Protected routes work
+- Profile picture displayed from Google account
 
 ---
 
