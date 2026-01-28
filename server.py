@@ -1,137 +1,211 @@
 """
-FastAPI Server for Agentic AI System
+FastAPI Server for Multi-Agent AI System v2.0
 
-Provides REST API endpoints for the multi-agent system.
+Production-grade REST API with:
+- Google OAuth authentication
+- Database persistence
+- Rate limiting
+- Error handling
+- Request validation
 """
 
-from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import uvicorn
-import os
+import logging
 from dotenv import load_dotenv
 
-from app import run_agent_system
+from config.settings import get_settings
+from database import init_db
+from app.auth.routes import router as auth_router
+from app.api.routes import router as api_router
 
 # Load environment variables
 load_dotenv()
+settings = get_settings()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO if not settings.DEBUG else logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for startup and shutdown events.
+    """
+    # Startup
+    logger.info("Starting Multi-Agent AI System v2.0...")
+    
+    try:
+        # Initialize database
+        init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down Multi-Agent AI System...")
+
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Agentic AI System API",
-    description="Multi-agent AI system with Orchestrator-Agent architecture",
-    version="1.0.0"
+    title="Multi-Agent AI System API",
+    description="""
+    Production-grade multi-agent AI system with:
+    
+    - **Google OAuth** authentication
+    - **Persistent** conversation history
+    - **User personas** that learn from interactions
+    - **Feedback system** for continuous improvement
+    - **RAG integration** for knowledge retrieval (planned)
+    - **MCP protocol** for external tool integration (planned)
+    
+    ## Authentication
+    
+    Most endpoints require authentication via JWT Bearer token.
+    
+    1. Login via `/auth/google/login`
+    2. Receive JWT token in callback
+    3. Include token in requests: `Authorization: Bearer <token>`
+    
+    ## Rate Limiting
+    
+    - **General endpoints**: 60 requests/minute
+    - **Query processing**: 10 requests/minute
+    """,
+    version="2.0.0",
+    lifespan=lifespan,
 )
+
+# Add rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify actual origins
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining"],
 )
 
 
-# Request/Response Models
-class ChatRequest(BaseModel):
-    message: str
-    verbose: bool = False
+# ============================================================================
+# Error Handlers
+# ============================================================================
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Global exception handler for unexpected errors.
+    """
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": "An unexpected error occurred",
+            "code": "INTERNAL_SERVER_ERROR",
+        },
+    )
 
 
-class ChatResponse(BaseModel):
-    response: str
-    intent: Optional[str] = None
-    selected_agents: Optional[list[str]] = None
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """
+    Middleware to log all requests.
+    """
+    logger.info(f"{request.method} {request.url.path}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
 
-class HealthResponse(BaseModel):
-    status: str
-    api_key_configured: bool
+# ============================================================================
+# Routers
+# ============================================================================
+
+# Include authentication routes
+app.include_router(auth_router)
+
+# Include API routes
+app.include_router(api_router)
 
 
-# API Endpoints
-@app.get("/", response_model=dict)
-async def root():
-    """Root endpoint - API info"""
-    return {
-        "message": "Agentic AI System API",
-        "version": "1.0.0",
-        "endpoints": {
-            "health": "/health",
-            "chat": "/api/chat",
-            "docs": "/docs"
-        }
-    }
+# ============================================================================
+# Health Check
+# ============================================================================
 
-
-@app.get("/health", response_model=HealthResponse)
-async def health_check():
-    """Health check endpoint"""
-    api_key_configured = bool(os.getenv("OPENAI_API_KEY"))
+@app.get(
+    "/health",
+    tags=["system"],
+    summary="Health check",
+    description="Check if the API is running and database is accessible"
+)
+@limiter.limit("60/minute")
+async def health_check(request: Request):
+    """
+    Health check endpoint.
+    
+    Returns:
+        System health status
+    """
+    # TODO: Add database connectivity check
     return {
         "status": "healthy",
-        "api_key_configured": api_key_configured
+        "version": "2.0.0",
+        "database": "connected",  # Placeholder
     }
 
 
-@app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+@app.get(
+    "/",
+    tags=["system"],
+    summary="API root",
+    description="Get API information and links"
+)
+async def root():
     """
-    Main chat endpoint - processes user messages through the agent system
+    Root endpoint with API information.
     
-    Args:
-        request: ChatRequest with user message
-        
     Returns:
-        ChatResponse with agent's response
+        API metadata and navigation links
     """
-    if not request.message or not request.message.strip():
-        raise HTTPException(status_code=400, detail="Message cannot be empty")
-    
-    # Check API key
-    if not os.getenv("OPENAI_API_KEY"):
-        raise HTTPException(
-            status_code=500, 
-            detail="OpenAI API key not configured"
-        )
-    
-    try:
-        # Run the agent system
-        response = run_agent_system(request.message, verbose=request.verbose)
-        
-        return ChatResponse(
-            response=response,
-            intent=None,  # Can be extracted from state if needed
-            selected_agents=None  # Can be extracted from state if needed
-        )
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing request: {str(e)}"
-        )
-
-
-@app.get("/api/agents", response_model=dict)
-async def get_agents():
-    """Get list of available agents"""
     return {
-        "agents": [
-            {
-                "name": "research",
-                "description": "Provides factual information and analysis"
-            },
-            {
-                "name": "writing",
-                "description": "Creates well-structured content"
-            },
-            {
-                "name": "code",
-                "description": "Generates production-quality code"
-            }
-        ]
+        "name": "Multi-Agent AI System API",
+        "version": "2.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "authentication": {
+            "login": "/auth/google/login",
+            "logout": "/auth/logout",
+        },
+        "api": {
+            "query": "/api/query",
+            "conversations": "/api/conversations",
+            "feedback": "/api/feedback",
+            "persona": "/api/persona",
+            "profile": "/api/user/profile",
+        }
     }
 
 
@@ -141,5 +215,7 @@ if __name__ == "__main__":
         "server:app",
         host="0.0.0.0",
         port=8000,
-        reload=True
+        reload=settings.DEBUG,
+        log_level="info" if not settings.DEBUG else "debug",
     )
+

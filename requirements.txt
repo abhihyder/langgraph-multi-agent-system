@@ -12,9 +12,31 @@ typing-extensions>=4.0.0
 # Environment & Config
 python-dotenv>=1.0.0
 
-# Optional: API Layer
+# API Layer
 fastapi>=0.109.0
 uvicorn>=0.27.0
+python-multipart>=0.0.6
 
-# Optional: Observability
-langsmith>=0.0.80
+# Database & ORM
+sqlalchemy>=2.0.0
+alembic>=1.18.0
+psycopg2-binary>=2.9.0
+
+# Authentication
+PyJWT>=2.8.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Google OAuth
+google-auth>=2.27.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+
+# HTTP Client
+httpx>=0.26.0
+
+# CORS & Security
+python-cors>=1.0.0
+
+# Observability
+slowapi>=0.1.9
