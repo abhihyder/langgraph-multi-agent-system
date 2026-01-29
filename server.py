@@ -168,11 +168,14 @@ async def health_check(request: Request):
     Returns:
         System health status
     """
-    # TODO: Add database connectivity check
+    # Check if API key is configured (using settings from module level)
+    api_key_configured = bool(settings.OPENAI_API_KEY)
+    
     return {
         "status": "healthy",
         "version": "2.0.0",
         "database": "connected",  # Placeholder
+        "api_key_configured": api_key_configured,
     }
 
 
