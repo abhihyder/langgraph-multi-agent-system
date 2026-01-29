@@ -19,7 +19,10 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from database import engine
-from database.models import Base
+from app.models.base import Base
+
+# Import all models to ensure they're registered with Base
+from app.models import user, persona, conversation, feedback
 
 
 def run_command(cmd: list, description: str):

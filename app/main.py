@@ -2,6 +2,7 @@
 Main Entry Point for Agentic AI System
 
 This module provides the interface to interact with the multi-agent system.
+Supports both CLI mode and API server mode.
 """
 
 import os
@@ -127,4 +128,6 @@ Type your question or 'quit' to exit.
 
 
 if __name__ == "__main__":
+    # CLI mode only
+    # For server mode, use: python server.py (from project root)
     main()

@@ -13,8 +13,11 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from database.models import Base
+from app.models.base import Base
 from config.settings import get_settings
+
+# Import all models to ensure they're registered with Base
+from app.models import user, persona, conversation, feedback
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

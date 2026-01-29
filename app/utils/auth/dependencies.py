@@ -10,7 +10,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jwt.exceptions import InvalidTokenError
 
 from database import SessionLocal, User
-from app.auth.security import verify_access_token
+from .security import verify_access_token
 
 # HTTP Bearer token scheme
 security = HTTPBearer()

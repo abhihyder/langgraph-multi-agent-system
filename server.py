@@ -22,8 +22,7 @@ from dotenv import load_dotenv
 
 from config.settings import get_settings
 from database import init_db
-from app.auth.routes import router as auth_router
-from app.api.routes import router as api_router
+from app.routes import auth_router, api_router
 
 # Load environment variables
 load_dotenv()
@@ -95,7 +94,7 @@ app = FastAPI(
 
 # Add rate limiter
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
 
 # Configure CORS

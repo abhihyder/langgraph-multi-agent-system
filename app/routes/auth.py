@@ -1,17 +1,17 @@
 """
-Authentication API routes.
-
+Authentication routes.
 Provides endpoints for Google OAuth login flow and token management.
 """
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Query
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
-from app.auth.oauth import get_google_oauth_url, exchange_code_for_token
+from app.controllers.auth_controller import AuthController
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+auth_controller = AuthController()
 
 
 class TokenResponse(BaseModel):
@@ -54,10 +54,7 @@ async def google_login(
     Example:
         GET /auth/google/login?redirect_uri=http://localhost:3000/dashboard
     """
-    # Store redirect_uri in state for retrieval after callback
-    state = redirect_uri if redirect_uri else "default"
-    
-    authorization_url = get_google_oauth_url(state=state)
+    authorization_url = await auth_controller.login(redirect_uri=redirect_uri)
     return RedirectResponse(authorization_url)
 
 
@@ -83,9 +80,6 @@ async def google_callback(
         HTTPException: 400 if authentication fails
         
     Example:
-        # This endpoint is called automatically by Google after user login
-        # Frontend should handle the response and store the access_token
-        
         Response:
         {
             "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -98,22 +92,7 @@ async def google_callback(
             }
         }
     """
-    try:
-        result = await exchange_code_for_token(code)
-        
-        # If frontend redirect_uri was provided in state, redirect there
-        if state and state != "default":
-            # For API responses, we return JSON
-            # Frontend should handle redirect using the token
-            pass
-        
-        return result
-        
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+    return await auth_controller.callback(code=code, state=state)
 
 
 @router.post("/logout")
@@ -136,33 +115,4 @@ async def logout():
             "message": "Successfully logged out"
         }
     """
-    # TODO: Implement token blacklisting with Redis if needed
-    return {"message": "Successfully logged out"}
-
-
-@router.get("/me")
-async def get_current_user_info():
-    """
-    Get current user information.
-    
-    Requires authentication via Bearer token.
-    
-    Returns:
-        Current user profile
-        
-    Example:
-        GET /auth/me
-        Authorization: Bearer <token>
-        
-        Response:
-        {
-            "id": "123e4567-e89b-12d3-a456-426614174000",
-            "email": "user@example.com",
-            "name": "John Doe",
-            "picture": "https://example.com/photo.jpg",
-            "created_at": "2024-01-01T00:00:00"
-        }
-    """
-    # This will be implemented using get_current_user dependency
-    # See app/api/routes.py for implementation
-    pass
+    return await auth_controller.logout()
