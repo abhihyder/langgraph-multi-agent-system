@@ -75,6 +75,9 @@ class Settings:
     MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))
     TIMEOUT: int = int(os.getenv("TIMEOUT", "120"))
     
+    # Frontend Configuration
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    
     # CORS Configuration
     CORS_ORIGINS: list = [
         "http://localhost:3000",

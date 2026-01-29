@@ -58,7 +58,7 @@ async def google_login(
     return RedirectResponse(authorization_url)
 
 
-@router.get("/google/callback", response_model=TokenResponse)
+@router.get("/google/callback")
 async def google_callback(
     code: str = Query(..., description="Authorization code from Google"),
     state: Optional[str] = Query(None, description="State parameter (contains redirect_uri)")
@@ -68,29 +68,17 @@ async def google_callback(
     
     Google redirects here after user authorizes the application.
     Exchanges authorization code for access token and creates/updates user.
+    Then redirects to frontend with token and user data as query parameters.
     
     Query Parameters:
         code: Authorization code from Google (required)
         state: State parameter containing frontend redirect URI
         
     Returns:
-        JWT access token and user information
+        Redirect to frontend with token and user data
         
     Raises:
         HTTPException: 400 if authentication fails
-        
-    Example:
-        Response:
-        {
-            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-            "token_type": "bearer",
-            "user": {
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "email": "user@example.com",
-                "name": "John Doe",
-                "picture": "https://example.com/photo.jpg"
-            }
-        }
     """
     return await auth_controller.callback(code=code, state=state)
 
@@ -100,15 +88,13 @@ async def logout():
     """
     Logout endpoint.
     
-    For JWT-based auth, logout is handled client-side by removing the token.
-    This endpoint exists for consistency and can be extended for token blacklisting.
+    Clears authentication cookies.
     
     Returns:
-        Success message
+        Success message with cleared cookies
         
     Example:
         POST /auth/logout
-        Authorization: Bearer <token>
         
         Response:
         {

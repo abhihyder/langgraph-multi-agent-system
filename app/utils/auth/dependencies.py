@@ -1,5 +1,4 @@
-"""
-FastAPI dependency injection for authentication.
+"""FastAPI dependency injection for authentication.
 
 Provides dependency functions to extract and validate current user from JWT tokens.
 """
@@ -22,7 +21,7 @@ async def get_current_user(
     """
     Dependency to get current authenticated user.
     
-    Validates JWT token and retrieves user from database.
+    Validates JWT token from Authorization header.
     Raises 401 if token is invalid or user not found.
     
     Args:
@@ -46,7 +45,7 @@ async def get_current_user(
     )
     
     try:
-        # Verify JWT token
+        # Verify JWT token from Authorization header
         token = credentials.credentials
         payload = verify_access_token(token)
         

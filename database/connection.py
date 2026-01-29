@@ -85,7 +85,8 @@ def init_db() -> None:
     Initialize database - create all tables.
     Should be called on application startup.
     """
-    from .models import Base as ModelsBase
+    from app.models import Base as ModelsBase
+    # Import statement above automatically registers all models
     ModelsBase.metadata.create_all(bind=engine)
 
 
@@ -94,7 +95,8 @@ def drop_db() -> None:
     Drop all tables. USE WITH CAUTION!
     Only for development/testing.
     """
-    from .models import Base as ModelsBase
+    from app.models import Base as ModelsBase
+    # Import statement above automatically registers all models
     if not settings.DEBUG:
         raise RuntimeError("Cannot drop database in production!")
     ModelsBase.metadata.drop_all(bind=engine)
