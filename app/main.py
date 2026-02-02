@@ -8,6 +8,7 @@ Supports both CLI mode and API server mode.
 import os
 from typing import Optional
 from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage
 
 from .agentic import app
 from .agentic import AgentState
@@ -31,7 +32,11 @@ def run_agent_system(user_input: str, verbose: bool = False) -> str:
     # Initialize state
     initial_state: AgentState = {
         "user_input": user_input,
+        "messages": [HumanMessage(content=user_input)],
+        "conversation_id": None,
+        "user_id": None,
         "intent": None,
+        "general_output": None,
         "research_output": None,
         "writing_output": None,
         "code_output": None,

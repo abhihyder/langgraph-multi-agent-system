@@ -69,7 +69,8 @@ async def process_query(
     result = await query_controller.process_query(
         query=request.query,
         context=request.context,
-        user=user
+        user=user,
+        conversation_id=request.conversation_id
     )
     
     return QueryResponse(**result)

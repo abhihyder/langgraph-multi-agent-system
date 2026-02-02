@@ -69,6 +69,7 @@ function App() {
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [apiStatus, setApiStatus] = useState(null)
+  const [conversationId, setConversationId] = useState(null)
   const messagesEndRef = useRef(null)
 
   // Check API health on mount
@@ -113,6 +114,7 @@ function App() {
       const response = await axios.post(`${API_URL}/api/query`, {
         query: userMessage,
         context: {},
+        conversation_id: conversationId,
         verbose: true
       })
 
@@ -127,6 +129,11 @@ function App() {
           : rawContent
           ? JSON.stringify(rawContent, null, 2)
           : 'I was unable to generate a response. Please try again.'
+
+      // Store conversation_id from response for future messages
+      if (response?.data?.conversation_id && !conversationId) {
+        setConversationId(response.data.conversation_id)
+      }
 
       const aiMessage = {
         id: Date.now() + 1,
@@ -154,6 +161,7 @@ function App() {
 
   const clearChat = () => {
     setMessages([])
+    setConversationId(null) // Reset conversation ID when clearing chat
   }
 
   return (

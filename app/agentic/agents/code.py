@@ -31,8 +31,7 @@ def code_agent(state: AgentState) -> Dict[str, Any]:
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
     
     # Build context for code generation
-    context = f"""
-Task Intent: {intent}
+    context = f"""Task Intent: {intent}
 
 User Request: {user_input}
 """
@@ -43,7 +42,6 @@ User Request: {user_input}
 Technical Context:
 {research_output}
 """
-    
     # Create messages
     messages = [
         SystemMessage(content=code_prompt),

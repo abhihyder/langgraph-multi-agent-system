@@ -31,8 +31,7 @@ def writing_agent(state: AgentState) -> Dict[str, Any]:
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
     
     # Build context for writing
-    context = f"""
-Task Intent: {intent}
+    context = f"""Task Intent: {intent}
 
 User Question: {user_input}
 """
