@@ -41,9 +41,7 @@ def upgrade() -> None:
             text('query', nullable=False),
             text('response', nullable=False),
             jsonb('agents_used', default=[]),
-            jsonb('routing_decision', default={}),
-            integer('response_time_ms', nullable=True),
-            jsonb('token_usage', default={}),
+            jsonb('conversation_metadata', default={}),
         ],
         include_timestamps=False
     )

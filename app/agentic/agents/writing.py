@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..state import AgentState
-from ..utils.helpers import load_prompt
+from ...utils.helpers import load_prompt
 
 
 def writing_agent(state: AgentState) -> Dict[str, Any]:

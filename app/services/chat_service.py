@@ -3,8 +3,8 @@ Chat Service - Handles business logic for chat interactions
 """
 
 from typing import Dict, Any, Optional
-from ..state import AgentState
-from ..graph import app as agent_graph
+from ..agentic import AgentState
+from ..agentic import app as agent_graph
 
 
 class ChatService:
