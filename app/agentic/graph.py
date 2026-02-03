@@ -6,12 +6,11 @@ This file constructs the LangGraph with:
 - Specialized agent nodes
 - Aggregator node
 - Conditional routing logic
-- Checkpointing for conversation memory
+- Memory handled by AutoMem service (no LangGraph checkpointing)
 """
 
 from typing import Literal
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.postgres import PostgresSaver
 
 from config.settings import get_settings
 from .state import AgentState
@@ -20,29 +19,7 @@ from .agents import research_agent, writing_agent, code_agent, general_agent
 from .aggregator import aggregator
 
 
-# Initialize checkpointer once at module level
 settings = get_settings()
-
-# Create PostgresSaver checkpointer - it will be initialized on first use
-checkpointer = None
-
-def get_checkpointer():
-    """Get or create the PostgresSaver checkpointer."""
-    global checkpointer
-    if checkpointer is None:
-        # PostgresSaver requires dict row factory with proper typing
-        from psycopg import Connection
-        from psycopg.rows import dict_row
-        
-        conn: Connection = Connection.connect(
-            settings.DATABASE_URL, 
-            autocommit=True, 
-            prepare_threshold=0,
-            row_factory=dict_row  # type: ignore
-        )
-        checkpointer = PostgresSaver(conn)  # type: ignore
-        checkpointer.setup()
-    return checkpointer
 
 
 def route_to_agents(state: AgentState) -> list[str]:
@@ -58,13 +35,12 @@ def route_to_agents(state: AgentState) -> list[str]:
 
 def build_graph():
     """
-    Build and compile the LangGraph workflow with checkpointing.
+    Build and compile the LangGraph workflow.
     
-    Uses PostgresSaver for persistent conversation memory across sessions.
-    Each conversation is identified by a thread_id.
+    Memory is handled by AutoMem service (no LangGraph checkpointing).
     
     Returns:
-        Compiled graph with checkpointing enabled
+        Compiled graph
     """
     # Create graph with shared state
     workflow = StateGraph(AgentState)
@@ -102,11 +78,8 @@ def build_graph():
     # Aggregator is the end
     workflow.add_edge("aggregator", END)
     
-    # Get checkpointer for conversation memory
-    checkpointer = get_checkpointer()
-    
-    # Compile the graph with checkpointing
-    return workflow.compile(checkpointer=checkpointer)
+    # Compile without checkpointing (memory handled by AutoMem)
+    return workflow.compile()
 
 
 # Create the compiled graph instance
