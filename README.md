@@ -1,11 +1,12 @@
 # Multi-Agent AI System with LangGraph
 
-A production-ready agentic AI system using **LangGraph** with NGINX-style architecture, where an **Orchestrator (Router) Agent** delegates tasks to specialized agents.
+A production-ready agentic AI system using **LangGraph** with clean layered architecture, where an **Orchestrator (Router) Agent** delegates tasks to specialized agents.
 
 **🎨 Now with a beautiful web UI!** Chat interface built with FastAPI + React.
 
 ## 🏗️ Architecture
 
+### Agent Flow
 ```
 User Input (Web UI / CLI)
    ↓
@@ -19,6 +20,19 @@ Aggregator Agent
    ↓
 Final Response (Web UI / CLI)
 ```
+
+### API Request Flow (Production)
+```
+server.py (FastAPI with OAuth + DB)
+    ↓
+app/api/routes.py (/api/query endpoint)
+    ↓
+app/services/chat_service.py
+    ↓
+app/orchestrator.py → agents → aggregator
+```
+
+See [API_ARCHITECTURE.md](API_ARCHITECTURE.md) for detailed documentation.
 
 ### Key Principles
 
@@ -69,15 +83,28 @@ cp .env.example .env
 # Get your key from: https://platform.openai.com/api-keys
 ```
 
-#### Step 2: Start FastAPI Server
+#### Step 2: Start Production API Server
 
 ```bash
-# Run the backend server
+# Start production server (with OAuth, Database, Rate Limiting)
 python server.py
+
+# Or use the helper script
+./start.sh
 ```
 
 Backend will be available at: **http://localhost:8000**  
 API Documentation: **http://localhost:8000/docs**
+
+**Production API Endpoints:**
+- `POST /api/query` - Process queries through agent system (requires auth)
+- `GET /api/conversations` - Get conversation history (requires auth)
+- `POST /api/feedback` - Submit feedback (requires auth)
+- `GET /api/user/profile` - Get user profile (requires auth)
+- `GET /auth/google/login` - OAuth login
+- `GET /health` - Health check
+
+**Note:** Most endpoints require Google OAuth authentication. See server documentation for details.
 
 #### Step 3: Setup Frontend
 
@@ -106,14 +133,18 @@ Try asking:
 - "Create a REST API in FastAPI"
 - "Compare React and Vue, then show example code"
 
-### Option 2: CLI Interface
+### Option 2: CLI Interface (No Auth Required)
 
 ```bash
 # Activate virtual environment
 source venv/bin/activate
 
-# Run interactive CLI
+# Run interactive CLI (direct agent access, no authentication)
 python -m app.main
+
+# Or use the helper script
+./start.sh
+# Then select option 2 for CLI mode
 
 # Or use in Python code
 python
@@ -126,17 +157,49 @@ python
 
 ```
 multi-agent/
+├── server.py                # Production FastAPI server (OAuth, DB)
+├── start.sh                 # Helper startup script
+│
 ├── app/                     # Core application
-│   ├── __init__.py
 │   ├── main.py              # CLI entry point
 │   ├── graph.py             # LangGraph workflow
 │   ├── state.py             # Shared state schema
-│   ├── router.py            # Orchestrator agent logic
+│   ├── orchestrator.py      # Router agent logic
 │   ├── aggregator.py        # Response synthesis
-│   └── agents/              # Specialized agents
-│       ├── research.py
-│       ├── writing.py
-│       └── code.py
+│   │
+│   ├── agents/              # Specialized AI agents
+│   │   ├── research.py
+│   │   ├── writing.py
+│   │   └── code.py
+│   │
+│   ├── api/                 # API layer
+│   │   ├── routes.py        # API endpoints (/api/query, etc.)
+│   │   └── models.py        # Request/Response models
+│   │
+│   ├── services/            # Business logic
+│   │   └── chat_service.py  # Calls orchestrator
+│   │
+│   ├── controllers/         # Request handlers
+│   │   └── chat_controller.py
+│   │
+│   ├── requests/            # Request validation
+│   │   └── chat_request.py
+│   │
+│   ├── responses/           # Response formatting
+│   │   └── chat_response.py
+│   │
+│   ├── middlewares/         # CORS, errors
+│   │   ├── cors_middleware.py
+│   │   └── error_middleware.py
+│   │
+│   └── auth/                # OAuth authentication
+│       ├── routes.py
+│       ├── dependencies.py
+│       └── security.py
+│
+├── database/                # Database models
+│   ├── __init__.py
+│   └── models.py
 │
 ├── frontend/                # React web UI
 │   ├── src/
@@ -299,23 +362,33 @@ TIMEOUT=120
 
 ### Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | API information |
-| `/health` | GET | Health check & API key status |
-| `/api/chat` | POST | Send message to AI agents |
-| `/api/agents` | GET | List available agents |
-| `/docs` | GET | Interactive API documentation |
+| Endpoint | Method | Auth Required | Description |
+|----------|--------|---------------|-------------|
+| `/` | GET | No | API information |
+| `/health` | GET | No | Health check & database status |
+| `/api/query` | POST | Yes | Process query through agents |
+| `/api/conversations` | GET | Yes | Get conversation history |
+| `/api/feedback` | POST | Yes | Submit feedback |
+| `/api/persona` | GET/PUT | Yes | User persona management |
+| `/api/user/profile` | GET | Yes | Get user profile |
+| `/auth/google/login` | GET | No | OAuth login |
+| `/auth/logout` | POST | Yes | Logout |
+| `/docs` | GET | No | Interactive API documentation |
 
-### Example Request
+### Example Request (with Authentication)
 
 ```bash
-POST /api/chat
+# First, get JWT token via OAuth login
+# Visit: http://localhost:8000/auth/google/login
+
+# Then use token in requests
+POST /api/query
+Authorization: Bearer <your-jwt-token>
 Content-Type: application/json
 
 {
-  "message": "What is Docker?",
-  "verbose": false
+  "query": "What is Docker?",
+  "context": {}
 }
 ```
 
@@ -323,9 +396,13 @@ Content-Type: application/json
 
 ```json
 {
+  "conversation_id": 123,
+  "query": "What is Docker?",
   "response": "Docker is a platform for developing...",
-  "intent": null,
-  "selected_agents": null
+  "agents_used": ["research", "writing"],
+  "agent_responses": [],
+  "metadata": {},
+  "created_at": "2024-01-29T12:00:00"
 }
 python -m app.main
 > Compare React and Vue --verbose
@@ -347,13 +424,18 @@ WRITING_MODEL=gpt-4
 
 ### API Testing
 ```bash
-# Test health endpoint
+# Test health endpoint (no auth required)
 curl http://localhost:8000/health
 
-# Test chat endpoint
-curl -X POST http://localhost:8000/api/chat \
+# For authenticated endpoints, first login via browser:
+# http://localhost:8000/auth/google/login
+# Get JWT token from callback
+
+# Then test query endpoint (requires auth)
+curl -X POST http://localhost:8000/api/query \
+  -H "Authorization: Bearer <your-jwt-token>" \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is Python?"}'
+  -d '{"query": "What is Python?", "context": {}}'
 ```
 
 ### CLI Testing

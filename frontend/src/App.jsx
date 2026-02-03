@@ -4,9 +4,10 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { useAuth } from './contexts/AuthContext'
 import './App.css'
 
-const API_URL = 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 // Markdown components with syntax highlighting
 const MarkdownComponents = {
@@ -63,10 +64,12 @@ const MarkdownComponents = {
 }
 
 function App() {
+  const { user, logout } = useAuth()
   const [messages, setMessages] = useState([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [apiStatus, setApiStatus] = useState(null)
+  const [conversationId, setConversationId] = useState(null)
   const messagesEndRef = useRef(null)
 
   // Check API health on mount
@@ -108,17 +111,34 @@ function App() {
     setIsLoading(true)
 
     try {
-      // Call API
-      const response = await axios.post(`${API_URL}/api/chat`, {
-        message: userMessage,
+      const response = await axios.post(`${API_URL}/api/query`, {
+        query: userMessage,
+        context: {},
+        conversation_id: conversationId,
         verbose: true
       })
 
-      // Add AI response to chat
+      const rawContent =
+        response?.data?.response ??
+        response?.data?.message ??
+        response?.data
+
+      const aiContent =
+        typeof rawContent === 'string'
+          ? rawContent
+          : rawContent
+          ? JSON.stringify(rawContent, null, 2)
+          : 'I was unable to generate a response. Please try again.'
+
+      // Store conversation_id from response for future messages
+      if (response?.data?.conversation_id && !conversationId) {
+        setConversationId(response.data.conversation_id)
+      }
+
       const aiMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: response.data.response,
+        content: aiContent,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
@@ -127,7 +147,10 @@ function App() {
       const errorMessage = {
         id: Date.now() + 1,
         role: 'error',
-        content: error.response?.data?.detail || 'Failed to get response from AI. Please try again.',
+        content:
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          'Failed to get response from AI. Please try again.',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -138,6 +161,7 @@ function App() {
 
   const clearChat = () => {
     setMessages([])
+    setConversationId(null) // Reset conversation ID when clearing chat
   }
 
   return (
@@ -150,8 +174,27 @@ function App() {
             <p>Powered by Multi-Agent System</p>
           </div>
           <div className="header-actions">
+            {user && (
+              <div className="user-profile">
+                {user.picture && (
+                  <img src={user.picture} alt={user.name ?? 'User avatar'} className="user-avatar" />
+                )}
+                <div className="user-info">
+                  <span className="user-name">{user.name || user.email}</span>
+                  <button onClick={logout} className="logout-btn" title="Logout">
+                    🚪 Logout
+                  </button>
+                </div>
+              </div>
+            )}
             {apiStatus && (
-              <span className={`status-badge ${apiStatus.status}`}>
+              <span
+                className={`status-badge ${
+                  apiStatus.status === 'ok' || apiStatus.status === 'healthy'
+                    ? 'ok'
+                    : 'error'
+                }`}
+              >
                 {apiStatus.api_key_configured ? '🟢 Connected' : '🔴 API Key Missing'}
               </span>
             )}

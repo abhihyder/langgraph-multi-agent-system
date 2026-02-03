@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..state import AgentState
-from ..utils import load_prompt
+from ...utils.helpers import load_prompt
 
 
 def writing_agent(state: AgentState) -> Dict[str, Any]:
@@ -31,8 +31,7 @@ def writing_agent(state: AgentState) -> Dict[str, Any]:
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
     
     # Build context for writing
-    context = f"""
-Task Intent: {intent}
+    context = f"""Task Intent: {intent}
 
 User Question: {user_input}
 """

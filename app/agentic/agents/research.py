@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..state import AgentState
-from ..utils import load_prompt
+from ...utils.helpers import load_prompt
 
 
 def research_agent(state: AgentState) -> Dict[str, Any]:
@@ -29,11 +29,10 @@ def research_agent(state: AgentState) -> Dict[str, Any]:
     # Initialize LLM
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
     
-    # Create messages with context
+    # Create messages
     messages = [
         SystemMessage(content=research_prompt),
-        HumanMessage(content=f"""
-Task Intent: {intent}
+        HumanMessage(content=f"""Task Intent: {intent}
 
 User Question: {user_input}
 

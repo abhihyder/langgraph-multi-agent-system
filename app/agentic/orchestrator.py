@@ -13,7 +13,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from .state import AgentState
-from .utils import load_prompt
+from ..utils.helpers import load_prompt
 
 
 def orchestrator_router(state: AgentState) -> Dict[str, Any]:

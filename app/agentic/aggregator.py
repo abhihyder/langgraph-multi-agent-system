@@ -10,7 +10,7 @@ The aggregator:
 
 from typing import Dict, Any
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
 from .state import AgentState
 
@@ -27,12 +27,16 @@ def aggregator(state: AgentState) -> Dict[str, Any]:
     """
     user_input = state["user_input"]
     intent = state.get("intent", "")
+    general_output = state.get("general_output")
     research_output = state.get("research_output")
     writing_output = state.get("writing_output")
     code_output = state.get("code_output")
     
     # Collect available outputs
     outputs = []
+    
+    if general_output:
+        outputs.append(f"## Response\n\n{general_output}")
     
     if research_output:
         outputs.append(f"## Research Information\n\n{research_output}")
@@ -45,8 +49,13 @@ def aggregator(state: AgentState) -> Dict[str, Any]:
     
     # If only one output, use it directly
     if len(outputs) == 1:
+        final_response = outputs[0].split("\n\n", 1)[1]  # Remove the header
+        current_messages = state.get("messages", [])
+        updated_messages = current_messages + [AIMessage(content=final_response)]
+        
         return {
-            "final_output": outputs[0].split("\n\n", 1)[1]  # Remove the header
+            "final_output": final_response,
+            "messages": updated_messages
         }
     
     # If multiple outputs, aggregate them intelligently
@@ -88,11 +97,21 @@ Create a unified, coherent response that answers the user's question.
         
         response = llm.invoke(messages)
         
+        # Add AI response to conversation history
+        current_messages = state.get("messages", [])
+        updated_messages = current_messages + [AIMessage(content=response.content)]
+        
         return {
-            "final_output": response.content
+            "final_output": response.content,
+            "messages": updated_messages
         }
     
     # Fallback if no outputs (shouldn't happen)
+    final_response = "I apologize, but I wasn't able to generate a response. Please try rephrasing your question."
+    current_messages = state.get("messages", [])
+    updated_messages = current_messages + [AIMessage(content=final_response)]
+    
     return {
-        "final_output": "I apologize, but I wasn't able to generate a response. Please try rephrasing your question."
+        "final_output": final_response,
+        "messages": updated_messages
     }

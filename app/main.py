@@ -2,14 +2,16 @@
 Main Entry Point for Agentic AI System
 
 This module provides the interface to interact with the multi-agent system.
+Supports both CLI mode and API server mode.
 """
 
 import os
 from typing import Optional
 from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage
 
-from .graph import app
-from .state import AgentState
+from .agentic import app
+from .agentic import AgentState
 
 
 # Load environment variables
@@ -30,7 +32,11 @@ def run_agent_system(user_input: str, verbose: bool = False) -> str:
     # Initialize state
     initial_state: AgentState = {
         "user_input": user_input,
+        "messages": [HumanMessage(content=user_input)],
+        "conversation_id": None,
+        "user_id": None,
         "intent": None,
+        "general_output": None,
         "research_output": None,
         "writing_output": None,
         "code_output": None,
@@ -127,4 +133,6 @@ Type your question or 'quit' to exit.
 
 
 if __name__ == "__main__":
+    # CLI mode only
+    # For server mode, use: python server.py (from project root)
     main()
