@@ -36,18 +36,26 @@ class ChatService:
         # AutoMem: recall relevant memories for this user/conversation
         automem = get_default_client()
         
-        # Retrieve short-term (conversation-scoped) memories - ONLY from current conversation
+        # STEP 1: Get recent chronological messages for conversational flow
+        recent_messages = []
+        try:
+            # Get last 5 messages chronologically (no query = chronological sort)
+            recent_messages = automem.recall(user_id=user_id, conversation_id=conversation_id, query=None, top_k=5, use_vector=False)
+            print(f"[AutoMem] Recent chronological (conv {conversation_id}): {len(recent_messages)} messages")
+        except Exception as e:
+            print(f"[AutoMem] Recent messages error: {e}")
+        
+        # STEP 2: Get semantically relevant short-term memories
         short_term_memories = []
         try:
-            # Try vector search first
+            # Try vector search for semantically relevant content
             short_term_memories = automem.recall(user_id=user_id, conversation_id=conversation_id, query=user_input, top_k=3, use_vector=True)
             
-            # If vector search got nothing (embeddings not ready), fall back to tag-only mode
-            if not short_term_memories:
-                print(f"[AutoMem] Short-term vector missed, trying tag-only mode")
-                short_term_memories = automem.recall(user_id=user_id, conversation_id=conversation_id, query=None, top_k=3, use_vector=False)
-                
-            print(f"[AutoMem] Short-term recall (conv {conversation_id}): {len(short_term_memories)} memories")
+            # Remove duplicates with recent_messages
+            recent_ids = {m.get("id") for m in recent_messages}
+            short_term_memories = [m for m in short_term_memories if m.get("id") not in recent_ids]
+            
+            print(f"[AutoMem] Semantic short-term (conv {conversation_id}): {len(short_term_memories)} memories")
         except Exception as e:
             print(f"[AutoMem] Short-term recall error: {e}")
         
@@ -80,9 +88,12 @@ class ChatService:
         except Exception as e:
             print(f"[AutoMem] Long-term recall error: {e}")
         
-        # Combine both types: prioritize long-term facts, then short-term context
-        recalled = long_term_memories + short_term_memories
-        print(f"[AutoMem] Total recalled: {len(recalled)} memories")
+        # Combine all memory types:
+        # 1. Recent chronological (for flow: "it" references, follow-ups)
+        # 2. Long-term cross-conversation (for persistent facts)
+        # 3. Semantic short-term (for relevant context beyond recency)
+        recalled = recent_messages + long_term_memories + short_term_memories
+        print(f"[AutoMem] Total context: {len(recent_messages)} recent + {len(long_term_memories)} long-term + {len(short_term_memories)} semantic = {len(recalled)} memories")
 
         # Build initial state with recalled memories
         mem_msgs = []
