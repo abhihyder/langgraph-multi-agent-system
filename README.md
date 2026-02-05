@@ -545,44 +545,15 @@ npm run build
 - **Authentication**: Secure API endpoints
 - **Cost Tracking**: Monitor LLM usage
 - **CORS**: Configure allowed origins in production
-- **Environment Variables**: Use secure secret managemente agent result
-    "final_output": str          # Aggregated response
-}
-```
+- **Environment Variables**: Use secure secret management
+- **Database**: PostgreSQL with connection pooling
+- **Streaming**: Streaming responses in web UI
+- **Persistence**: Chat history and user data
 
-## 🚧 Production Considerations
+## 🐛 Troubleshooting
 
-For production deployment, consider adding:
+### Common Issues
 
-- **Error Handling**: Retry logic and fallbacks
-- **Monitoring**: LangSmith or OpenTelemetry integration
-- **Rate Limiting**: API call management
-- **Caching**: Redis for repeated queries
-- **API Layer**: FastAPI wrap
-- Streaming responses in web UI
-- User authentication
-- Chat history persistence
-
-## 📚 Documentation
-
-- [SETUP_GUIDE.md](SETUP_GUIDE.md) - Detailed setup instructions
-- [CHAT_SETUP.md](CHAT_SETUP.md) - Web UI setup guide
-- [MARKDOWN_SUPPORT.md](MARKDOWN_SUPPORT.md) - Markdown  - LLM framework
-- [LangGraph](https://github.com/langchain-ai/langgraph) - Workflow orchestration
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
-- [React](https://react.dev/) - Frontend UI library
-- [Vite](https://vitejs.dev/) - Fast build tool
-- [OpenAI GPT-4](https://openai.com/) - Language models
-
-## ⭐ Star this Repository
-
-If you find this project helpful, please give it a star! It helps others discover the project.
-
----
-
-**Philosophy**: Agents should behave like microservices, not like humans chatting. Determinism, clarity, and control beat autonomy in real systems.
-
-**Made with ❤️ using LangGraph**
 - **Port 8000 in use**: Change port in `server.py`
 - **API key error**: Check `.env` file has valid `OPENAI_API_KEY`
 - **Import errors**: Ensure virtual environment is activated
@@ -595,9 +566,15 @@ If you find this project helpful, please give it a star! It helps others discove
 ### Model Issues
 - **Model not found**: Update to `gpt-4o-mini` or check API key access
 - **Rate limit**: Wait or upgrade OpenAI plan
-- **Slow responses**: Use faster models like `gpt-3.5-turbo`per for HTTP access
-- **Authentication**: Secure API endpoints
-- **Cost Tracking**: Monitor LLM usage
+- **Slow responses**: Use faster models like `gpt-3.5-turbo`
+
+## 📚 Documentation
+
+- [SETUP_GUIDE.md](SETUP_GUIDE.md) - Detailed setup instructions
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and design
+- [TESTING.md](TESTING.md) - Testing guide and best practices
+- [INSTRUCTION.md](INSTRUCTION.md) - Implementation guide
+- [FUTURE_IMPROVEMENTS_PLAN.md](FUTURE_IMPROVEMENTS_PLAN.md) - Roadmap and planned features
 
 ## 📝 Development Notes
 
@@ -618,13 +595,22 @@ Contributions welcome! Areas for improvement:
 - Human-in-the-loop workflows
 
 ## 📄 License
+ - LLM framework
+- [LangGraph](https://github.com/langchain-ai/langgraph) - Workflow orchestration
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+- [React](https://react.dev/) - Frontend UI library
+- [Vite](https://vitejs.dev/) - Fast build tool
+- [OpenAI GPT-4](https://openai.com/) - Language models
 
-MIT License - See LICENSE file for details
+## ⭐ Star this Repository
 
-## 🙏 Acknowledgments
+If you find this project helpful, please give it a star! It helps others discover the project.
 
-Built with:
-- [LangChain](https://github.com/langchain-ai/langchain)
+---
+
+**Philosophy**: Agents should behave like microservices, not like humans chatting. Determinism, clarity, and control beat autonomy in real systems.
+
+**Made with ❤️ using LangGraph**
 - [LangGraph](https://github.com/langchain-ai/langgraph)
 - OpenAI GPT-4
 
