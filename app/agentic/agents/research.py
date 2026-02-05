@@ -23,11 +23,24 @@ def research_agent(state: AgentState) -> Dict[str, Any]:
     user_input = state["user_input"]
     intent = state.get("intent", "")
     
+    # Get context from retrieval agents
+    knowledge_output = state.get("knowledge_output")
+    memory_output = state.get("memory_output")
+    
     # Load research prompt
     research_prompt = load_prompt("research.md")
     
     # Initialize LLM
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
+    
+    # Build context section
+    context_parts = []
+    if knowledge_output:
+        context_parts.append(f"=== COMPANY KNOWLEDGE ===\n{knowledge_output}")
+    if memory_output:
+        context_parts.append(f"=== USER HISTORY ===\n{memory_output}")
+    
+    context_section = "\n\n".join(context_parts) if context_parts else "No additional context available."
     
     # Create messages
     messages = [
@@ -36,7 +49,9 @@ def research_agent(state: AgentState) -> Dict[str, Any]:
 
 User Question: {user_input}
 
-Provide comprehensive research-based information to answer this question.
+{context_section}
+
+Provide comprehensive research-based information using the context above when relevant.
 """)
     ]
     

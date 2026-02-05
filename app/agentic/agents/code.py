@@ -22,7 +22,11 @@ def code_agent(state: AgentState) -> Dict[str, Any]:
     """
     user_input = state["user_input"]
     intent = state.get("intent", "")
+    
+    # Get context from other agents
     research_output = state.get("research_output", "")
+    knowledge_output = state.get("knowledge_output")
+    memory_output = state.get("memory_output")
     
     # Load code prompt
     code_prompt = load_prompt("code.md")
@@ -34,6 +38,20 @@ def code_agent(state: AgentState) -> Dict[str, Any]:
     context = f"""Task Intent: {intent}
 
 User Request: {user_input}
+"""
+    
+    if knowledge_output:
+        context += f"""
+
+=== COMPANY KNOWLEDGE ===
+{knowledge_output}
+"""
+    
+    if memory_output:
+        context += f"""
+
+=== USER HISTORY ===
+{memory_output}
 """
     
     if research_output:
