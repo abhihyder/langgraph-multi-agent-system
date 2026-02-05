@@ -37,29 +37,29 @@ def writing_agent(state: AgentState) -> Dict[str, Any]:
     # Build context for writing
     context = f"""Task Intent: {intent}
 
-User Question: {user_input}
-"""
+    User Question: {user_input}
+    """
     
     if knowledge_output:
         context += f"""
 
-=== COMPANY KNOWLEDGE ===
-{knowledge_output}
-"""
+        === COMPANY KNOWLEDGE ===
+        {knowledge_output}
+        """
     
     if memory_output:
         context += f"""
 
-=== USER HISTORY ===
-{memory_output}
-"""
+        === USER HISTORY ===
+        {memory_output}
+        """
     
     if research_output:
         context += f"""
 
-Research Context (use this information):
-{research_output}
-"""
+        Research Context (use this information):
+        {research_output}
+        """
     
     # Create messages
     messages = [

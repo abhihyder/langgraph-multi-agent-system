@@ -47,12 +47,12 @@ def research_agent(state: AgentState) -> Dict[str, Any]:
         SystemMessage(content=research_prompt),
         HumanMessage(content=f"""Task Intent: {intent}
 
-User Question: {user_input}
+        User Question: {user_input}
 
-{context_section}
+        {context_section}
 
-Provide comprehensive research-based information using the context above when relevant.
-""")
+        Provide comprehensive research-based information using the context above when relevant.
+        """)
     ]
     
     # Get research response
