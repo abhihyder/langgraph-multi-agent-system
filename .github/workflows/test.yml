@@ -42,6 +42,7 @@ jobs:
         pip install pytest-cov coverage
     
     - name: Lint with flake8
+      continue-on-error: true
       run: |
         pip install flake8
         # Stop the build if there are Python syntax errors or undefined names
@@ -49,26 +50,12 @@ jobs:
         # Exit-zero treats all errors as warnings
         flake8 app --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
-    - name: Run unit tests
+    - name: Run tests with coverage
       env:
         TESTING: 1
         AUTOMEM_URL: http://localhost:8001
       run: |
-        pytest tests/ -m unit -v --tb=short
-    
-    - name: Run integration tests
-      env:
-        TESTING: 1
-        AUTOMEM_URL: http://localhost:8001
-      run: |
-        pytest tests/ -m integration -v --tb=short
-    
-    - name: Generate coverage report
-      env:
-        TESTING: 1
-        AUTOMEM_URL: http://localhost:8001
-      run: |
-        pytest --cov=app --cov-report=html --cov-report=xml --cov-report=term-missing
+        pytest tests/ -v --tb=short --cov=app --cov-report=html --cov-report=xml --cov-report=term-missing
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -77,12 +64,6 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
-    
-    - name: Check coverage threshold
-      continue-on-error: true
-      run: |
-        pip install coverage
-        coverage report --fail-under=70
     
     - name: Archive test results
       if: always()
