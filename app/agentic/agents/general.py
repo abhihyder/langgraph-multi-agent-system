@@ -53,12 +53,12 @@ def general_agent(state: AgentState) -> Dict[str, Any]:
         SystemMessage(content=general_prompt),
         HumanMessage(content=f"""Task Intent: {intent}
 
-User Question: {user_input}
+        User Question: {user_input}
 
-{context_section}
+        {context_section}
 
-Provide a helpful, conversational response using the context above when relevant.
-""")
+        Provide a helpful, conversational response using the context above when relevant.
+        """)
     ]
     
     # Get response

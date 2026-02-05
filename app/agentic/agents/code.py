@@ -37,29 +37,29 @@ def code_agent(state: AgentState) -> Dict[str, Any]:
     # Build context for code generation
     context = f"""Task Intent: {intent}
 
-User Request: {user_input}
-"""
+    User Request: {user_input}
+    """
     
     if knowledge_output:
         context += f"""
 
-=== COMPANY KNOWLEDGE ===
-{knowledge_output}
-"""
+        === COMPANY KNOWLEDGE ===
+        {knowledge_output}
+        """
     
     if memory_output:
         context += f"""
 
-=== USER HISTORY ===
-{memory_output}
-"""
-    
+        === USER HISTORY ===
+        {memory_output}
+        """
+            
     if research_output:
         context += f"""
 
-Technical Context:
-{research_output}
-"""
+        Technical Context:
+        {research_output}
+        """
     # Create messages
     messages = [
         SystemMessage(content=code_prompt),
