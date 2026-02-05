@@ -40,6 +40,41 @@ Required test packages:
 - `pytest-env` - Environment variable management
 - `faker` - Test data generation
 
+## Quick Reference
+
+### Common Test Commands
+
+```bash
+# Basic
+pytest                          # Run all tests
+pytest -v                       # Verbose output
+pytest -s                       # Show print statements
+pytest -x                       # Stop on first failure
+pytest --tb=short               # Shorter traceback
+
+# By Marker
+pytest -m unit                  # Unit tests only
+pytest -m integration           # Integration tests
+pytest -m api                   # API endpoint tests
+pytest -m auth                  # Authentication tests
+pytest -m agent                 # Agent tests
+
+# Coverage
+pytest --cov=app --cov-report=html    # HTML report
+pytest --cov=app --cov-report=term    # Terminal report
+make test-coverage                     # Using Makefile
+
+# Specific Tests
+pytest tests/test_chat_service.py                    # Single file
+pytest tests/test_chat_service.py::TestChatService  # Single class
+pytest tests/test_api_endpoints.py::test_query      # Single test
+
+# Using Test Runner
+python run_tests.py all         # All tests
+python run_tests.py unit        # Unit only
+python run_tests.py coverage    # With coverage
+```
+
 ## Running Tests
 
 ### Run All Tests
