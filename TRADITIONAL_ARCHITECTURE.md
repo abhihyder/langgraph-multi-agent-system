@@ -9,7 +9,7 @@
 ## Layered Architecture Pattern
 
 **Layers**:
-1. **Route Layer** (`app/api/routes/`): HTTP endpoint definitions
+1. **Route Layer** (`app/routes/`): HTTP endpoint definitions
 2. **Controller Layer** (`app/controllers/`): Request/response handling, validation
 3. **Service Layer** (`app/services/`): Business logic, orchestration
 4. **Model Layer** (`app/models/`): Database models, schemas
@@ -47,11 +47,6 @@ Routes → Controllers → Services → Models
 - ✅ Controllers import Services
 - ✅ Services import Models
 - ✅ Services import other Services
-
-**Never reverse (wrong direction)**:
-- ❌ Models import from Services
-- ❌ Services import from Controllers
-- ❌ Models import from Controllers
 
 ### 3. Reusability
 **Rule**: Services are reusable by multiple controllers/routes.
@@ -228,11 +223,10 @@ class PaymentController:
 
 ```
 app/
-├── api/
-│   └── routes/
-│       ├── user_routes.py       # User endpoints
-│       ├── order_routes.py      # Order endpoints
-│       └── payment_routes.py    # Payment endpoints
+│── routes/
+│   ├── user_routes.py       # User endpoints
+│   ├── order_routes.py      # Order endpoints
+│   └── payment_routes.py    # Payment endpoints
 ├── controllers/
 │   ├── user_controller.py       # User request handling
 │   ├── order_controller.py
