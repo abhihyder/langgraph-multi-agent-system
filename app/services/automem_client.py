@@ -123,6 +123,75 @@ class AutoMemClient:
             print(f"[AutoMem] associate error: {e}")
             return False
 
+    def store_global_knowledge(self, content: str, category: str, metadata: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        """
+        Store company-wide knowledge accessible to all users (policies, procedures, etc.)
+        
+        Args:
+            content: The knowledge content (policy text, procedure, etc.)
+            category: Category tag (e.g., 'leave_policy', 'hr_policy', 'company_info')
+            metadata: Optional additional metadata
+            
+        Returns:
+            Response from AutoMem or None on error
+        """
+        url = f"{self.base_url}/memory"
+        
+        # Use special tag 'global_knowledge' for company-wide data
+        tags = ["global_knowledge", f"category_{category}"]
+        
+        payload = {
+            "content": content,
+            "type": "knowledge",
+            "importance": 0.9,  # High importance for official policies
+            "tags": tags,
+        }
+        if metadata:
+            payload["metadata"] = metadata
+            
+        try:
+            r = self.client.post(url, json=payload, headers=self._headers())
+            r.raise_for_status()
+            result = r.json()
+            time.sleep(0.5)  # Allow embedding processing
+            return result
+        except Exception as e:
+            print(f"[AutoMem] store_global_knowledge error: {e}")
+            return None
+
+    def recall_global_knowledge(self, query: str, top_k: int = 5, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """
+        Retrieve company-wide knowledge using semantic search.
+        
+        Args:
+            query: Search query (user's question about policies, etc.)
+            top_k: Number of results to return
+            categories: Optional list of category filters (e.g., ['leave_policy', 'hr_policy'])
+            
+        Returns:
+            List of relevant knowledge documents
+        """
+        url = f"{self.base_url}/recall"
+        params: Dict[str, Any] = {
+            "query": query,
+            "limit": top_k,
+            "tags": "global_knowledge"  # Filter to only global knowledge
+        }
+        
+        # Add category filters if specified
+        if categories:
+            category_tags = [f"category_{cat}" for cat in categories]
+            params["tags"] = f"global_knowledge,{','.join(category_tags)}"
+        
+        try:
+            r = self.client.get(url, params=params, headers=self._headers())
+            r.raise_for_status()
+            data = r.json()
+            return data.get("results", [])
+        except Exception as e:
+            print(f"[AutoMem] recall_global_knowledge error: {e}")
+            return []
+
 
 _default_client: Optional[AutoMemClient] = None
 

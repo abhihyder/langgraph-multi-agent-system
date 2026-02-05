@@ -15,7 +15,7 @@ from langgraph.graph import StateGraph, END
 from config.settings import get_settings
 from .state import AgentState
 from .orchestrator import orchestrator_router
-from .agents import research_agent, writing_agent, code_agent, general_agent
+from .agents import research_agent, writing_agent, code_agent, general_agent, knowledge_agent, memory_agent
 from .aggregator import aggregator
 
 
@@ -47,6 +47,8 @@ def build_graph():
     
     # Add nodes
     workflow.add_node("orchestrator", orchestrator_router)
+    workflow.add_node("knowledge", knowledge_agent)
+    workflow.add_node("memory", memory_agent)
     workflow.add_node("general", general_agent)
     workflow.add_node("research", research_agent)
     workflow.add_node("writing", writing_agent)
@@ -61,6 +63,8 @@ def build_graph():
         "orchestrator",
         route_to_agents,
         {
+            "knowledge": "knowledge",
+            "memory": "memory",
             "general": "general",
             "research": "research",
             "writing": "writing",
@@ -70,6 +74,8 @@ def build_graph():
     )
     
     # All agents flow to aggregator
+    workflow.add_edge("knowledge", "aggregator")
+    workflow.add_edge("memory", "aggregator")
     workflow.add_edge("general", "aggregator")
     workflow.add_edge("research", "aggregator")
     workflow.add_edge("writing", "aggregator")

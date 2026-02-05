@@ -23,26 +23,24 @@ class TestChatService:
     def mock_agent_graph_result(self):
         """Mock result from agent graph execution"""
         return {
-            "final_output": "This is the AI response",
+            "final_output": "Test response",
             "intent": "User needs help with coding",
             "selected_agents": ["code"],
-            "messages": [
-                HumanMessage(content="Help me write code"),
-                AIMessage(content="This is the AI response")
-            ],
+            "knowledge_output": None,
+            "memory_output": None,
             "research_output": None,
             "writing_output": None,
             "code_output": "def example(): pass"
         }
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_basic_flow(self, mock_graph, mock_get_client, chat_service, 
+    def test_process_chat_basic_flow(self, mock_get_client, chat_service, 
                                      mock_automem_client, mock_agent_graph_result):
         """Test basic chat processing flow"""
         # Setup mocks
         mock_get_client.return_value = mock_automem_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         
         # Execute
         result = chat_service.process_chat(
@@ -51,39 +49,33 @@ class TestChatService:
             conversation_id=1
         )
         
-        # Verify AutoMem recall was called (3 times: recent, semantic, long-term)
-        assert mock_automem_client.recall.call_count == 3
-        
         # Verify agent graph was invoked
-        mock_graph.invoke.assert_called_once()
+        chat_service.agent_graph.invoke.assert_called_once()
         
         # Verify AutoMem store was called (2 times: user message + AI response)
         assert mock_automem_client.store_message.call_count == 2
         
         # Verify response structure
-        assert result["response"] == "This is the AI response"
+        assert result["response"] == "Test response"
         assert result["intent"] == "User needs help with coding"
         assert result["agents_used"] == ["code"]
         assert "metadata" in result
+        assert result["metadata"]["knowledge_used"] is False
+        assert result["metadata"]["memory_used"] is False
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_memory_recall_steps(self, mock_graph, mock_get_client, 
+    def test_process_chat_memory_recall_steps(self, mock_get_client, 
                                                chat_service, mock_automem_client,
                                                mock_agent_graph_result):
-        """Test three-tier memory recall (recent, semantic, long-term)"""
+        """Test that memory recall is now handled by memory_agent (not in chat_service)"""
         mock_get_client.return_value = mock_automem_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
         
-        # Configure different responses for each recall call
-        mock_automem_client.recall.side_effect = [
-            # Recent chronological (query=None)
-            [{"id": "r1", "memory": {"content": "Recent message 1"}}],
-            # Semantic short-term (query=user_input)
-            [{"id": "s1", "memory": {"content": "Semantic match 1"}}],
-            # Long-term cross-conversation (conversation_id=None)
-            [{"id": "l1", "memory": {"content": "Old memory", "tags": ["user_1"]}}]
-        ]
+        # Add memory_output to show memory_agent was used
+        mock_agent_graph_result["memory_output"] = "Memory context from memory_agent"
+        mock_agent_graph_result["selected_agents"] = ["memory", "general"]
+        
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         
         result = chat_service.process_chat(
             user_input="Test query",
@@ -91,39 +83,23 @@ class TestChatService:
             conversation_id=1
         )
         
-        # Verify recall calls
-        calls = mock_automem_client.recall.call_args_list
+        # Verify agent graph was invoked (memory recall happens inside the graph now)
+        chat_service.agent_graph.invoke.assert_called_once()
         
-        # First call: recent chronological
-        assert calls[0].kwargs["query"] is None
-        assert calls[0].kwargs["use_vector"] is False
-        assert calls[0].kwargs["top_k"] == 5
-        
-        # Second call: semantic short-term
-        assert calls[1].kwargs["query"] == "Test query"
-        assert calls[1].kwargs["use_vector"] is True
-        assert calls[1].kwargs["top_k"] == 3
-        
-        # Third call: long-term cross-conversation
-        assert calls[2].kwargs["conversation_id"] is None
-        assert calls[2].kwargs["top_k"] == 10
+        # Verify metadata indicates memory was used
+        assert result["metadata"]["memory_used"] is True
+        assert result["response"] == "Test response"
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_memory_deduplication(self, mock_graph, mock_get_client,
+    def test_process_chat_memory_deduplication(self, mock_get_client,
                                                chat_service, mock_agent_graph_result):
-        """Test that semantic memories don't duplicate recent messages"""
+        """Test that chat service works correctly"""
         mock_client = Mock()
         mock_get_client.return_value = mock_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
-        
-        # Return same memory ID in both recent and semantic
-        mock_client.recall.side_effect = [
-            [{"id": "duplicate", "memory": {"content": "Same message"}}],  # Recent
-            [{"id": "duplicate", "memory": {"content": "Same message"}}],  # Semantic (should be filtered)
-            []  # Long-term
-        ]
         mock_client.store_message.return_value = {"id": "stored"}
+        
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         
         result = chat_service.process_chat(
             user_input="Test",
@@ -131,29 +107,19 @@ class TestChatService:
             conversation_id=1
         )
         
-        # The duplicate should have been filtered out
-        # We can't directly check the internal state, but we verify it ran successfully
-        assert result["response"] is not None
+        # Verify it ran successfully
+        assert result["response"] == "Test response"
+        chat_service.agent_graph.invoke.assert_called_once()
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_filters_current_conversation_from_long_term(self, mock_graph, 
-                                                                       mock_get_client,
+    def test_process_chat_filters_current_conversation_from_long_term(self, mock_get_client,
                                                                        chat_service,
                                                                        mock_agent_graph_result):
-        """Test that long-term recall filters out current conversation"""
+        """Test that chat service works correctly"""
         mock_client = Mock()
         mock_get_client.return_value = mock_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
-        
-        mock_client.recall.side_effect = [
-            [],  # Recent
-            [],  # Semantic
-            [   # Long-term - includes current conversation (should be filtered)
-                {"id": "l1", "memory": {"content": "Old conv", "tags": ["user_1", "conversation_5"]}},
-                {"id": "l2", "memory": {"content": "Current conv", "tags": ["user_1", "conversation_1"]}}  # Should be filtered
-            ]
-        ]
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         mock_client.store_message.return_value = {"id": "stored"}
         
         result = chat_service.process_chat(
@@ -162,16 +128,17 @@ class TestChatService:
             conversation_id=1
         )
         
-        assert result["response"] is not None
+        assert result["response"] == "Test response"
+        chat_service.agent_graph.invoke.assert_called_once()
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_stores_user_and_ai_messages(self, mock_graph, mock_get_client,
+    def test_process_chat_stores_user_and_ai_messages(self, mock_get_client,
                                                       chat_service, mock_automem_client,
                                                       mock_agent_graph_result):
         """Test that both user and AI messages are stored"""
         mock_get_client.return_value = mock_automem_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         
         result = chat_service.process_chat(
             user_input="Test input",
@@ -191,19 +158,17 @@ class TestChatService:
         
         # Second call: assistant message
         assert store_calls[1].kwargs["role"] == "assistant"
-        assert store_calls[1].kwargs["content"] == "This is the AI response"
+        assert store_calls[1].kwargs["content"] == "Test response"
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_handles_recall_error(self, mock_graph, mock_get_client,
+    def test_process_chat_handles_recall_error(self, mock_get_client,
                                                chat_service, mock_agent_graph_result):
         """Test chat processing continues even if recall fails"""
         mock_client = Mock()
         mock_get_client.return_value = mock_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         
-        # Make recall raise an exception
-        mock_client.recall.side_effect = Exception("AutoMem unavailable")
         mock_client.store_message.return_value = {"id": "stored"}
         
         # Should not raise exception
@@ -213,16 +178,16 @@ class TestChatService:
             conversation_id=1
         )
         
-        assert result["response"] is not None
+        assert result["response"] == "Test response"
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_handles_store_error(self, mock_graph, mock_get_client,
+    def test_process_chat_handles_store_error(self, mock_get_client,
                                               chat_service, mock_automem_client,
                                               mock_agent_graph_result):
         """Test chat processing continues even if storage fails"""
         mock_get_client.return_value = mock_automem_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         
         # Make store_message raise an exception
         mock_automem_client.store_message.side_effect = Exception("Storage failed")
@@ -234,16 +199,16 @@ class TestChatService:
             conversation_id=1
         )
         
-        assert result["response"] is not None
+        assert result["response"] == "Test response"
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_without_conversation_id(self, mock_graph, mock_get_client,
+    def test_process_chat_without_conversation_id(self, mock_get_client,
                                                   chat_service, mock_automem_client,
                                                   mock_agent_graph_result):
         """Test chat processing works without conversation_id (new conversation)"""
         mock_get_client.return_value = mock_automem_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         
         result = chat_service.process_chat(
             user_input="Test",
@@ -252,28 +217,18 @@ class TestChatService:
         )
         
         # Verify it still works
-        assert result["response"] is not None
-        
-        # Verify conversation_id=None was passed to recall
-        recall_calls = mock_automem_client.recall.call_args_list
-        # At least one call should have conversation_id
-        assert any(call.kwargs.get("conversation_id") is None for call in recall_calls)
+        assert result["response"] == "Test response"
+        chat_service.agent_graph.invoke.assert_called_once()
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_formats_memory_context(self, mock_graph, mock_get_client,
+    def test_process_chat_formats_memory_context(self, mock_get_client,
                                                  chat_service, mock_agent_graph_result):
-        """Test that memories are properly formatted in context"""
+        """Test that chat service invokes agent graph correctly"""
         mock_client = Mock()
         mock_get_client.return_value = mock_client
-        mock_graph.invoke.return_value = mock_agent_graph_result
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = mock_agent_graph_result
         
-        # Return memories with content and relations
-        mock_client.recall.side_effect = [
-            [{"id": "m1", "memory": {"content": "User is a software engineer"}, "relations": []}],
-            [],
-            []
-        ]
         mock_client.store_message.return_value = {"id": "stored"}
         
         result = chat_service.process_chat(
@@ -282,13 +237,14 @@ class TestChatService:
             conversation_id=1
         )
         
-        # Verify graph was called with formatted messages
-        call_args = mock_graph.invoke.call_args
+        # Verify graph was called correctly
+        call_args = chat_service.agent_graph.invoke.call_args
         state = call_args.args[0]
         
-        # Should have memory message + user input message
-        assert len(state["messages"]) >= 1
         assert state["user_input"] == "Test"
+        assert state["user_id"] == 1
+        assert state["conversation_id"] == 1
+        assert result["response"] == "Test response"
     
     def test_get_agent_info(self, chat_service):
         """Test getting agent information"""
@@ -305,16 +261,17 @@ class TestChatService:
             assert "capabilities" in agent
     
     @patch('app.services.chat_service.get_default_client')
-    @patch('app.services.chat_service.agent_graph')
-    def test_process_chat_fallback_response(self, mock_graph, mock_get_client,
+    def test_process_chat_fallback_response(self, mock_get_client,
                                            chat_service, mock_automem_client):
         """Test fallback response when no final_output"""
         mock_get_client.return_value = mock_automem_client
-        mock_graph.invoke.return_value = {
+        chat_service.agent_graph = Mock()
+        chat_service.agent_graph.invoke.return_value = {
             "final_output": "",  # Empty response
             "intent": "test",
             "selected_agents": [],
-            "messages": []
+            "knowledge_output": None,
+            "memory_output": None
         }
         
         result = chat_service.process_chat(

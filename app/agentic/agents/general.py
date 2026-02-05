@@ -28,7 +28,10 @@ def general_agent(state: AgentState) -> Dict[str, Any]:
     """
     user_input = state["user_input"]
     intent = state.get("intent", "")
-    messages = state.get("messages", [])
+    
+    # Get context from retrieval agents
+    knowledge_output = state.get("knowledge_output")
+    memory_output = state.get("memory_output")
     
     # Load general prompt
     general_prompt = load_prompt("general.md")
@@ -36,20 +39,27 @@ def general_agent(state: AgentState) -> Dict[str, Any]:
     # Initialize LLM
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
     
-    # Build messages with conversation history
-    llm_messages: List[BaseMessage] = [SystemMessage(content=general_prompt)]
+    # Build context section
+    context_parts = []
+    if knowledge_output:
+        context_parts.append(f"=== COMPANY KNOWLEDGE ===\n{knowledge_output}")
+    if memory_output:
+        context_parts.append(f"=== USER HISTORY ===\n{memory_output}")
     
-    # Add conversation history (excluding the last message which is the current user input)
-    if len(messages) > 1:
-        llm_messages.extend(messages[:-1])
+    context_section = "\n\n".join(context_parts) if context_parts else "No additional context available."
     
-    # Add current query with context
-    llm_messages.append(HumanMessage(content=f"""Task Intent: {intent}
+    # Build messages
+    llm_messages: List[BaseMessage] = [
+        SystemMessage(content=general_prompt),
+        HumanMessage(content=f"""Task Intent: {intent}
 
 User Question: {user_input}
 
-Provide a helpful, conversational response to the user's question.
-"""))
+{context_section}
+
+Provide a helpful, conversational response using the context above when relevant.
+""")
+    ]
     
     # Get response
     response = llm.invoke(llm_messages)
