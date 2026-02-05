@@ -1,5 +1,57 @@
 # 🚀 Setup Guide - Agentic AI System
 
+## Web UI Setup
+
+### Backend Server
+
+```bash
+# Install backend dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Add your OPENAI_API_KEY to .env
+
+# Start the FastAPI server
+python server.py
+```
+
+Backend will be available at: http://localhost:8000  
+API Documentation: http://localhost:8000/docs
+
+### Frontend Development Server
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+Frontend will be available at: http://localhost:3000
+
+### Usage
+
+1. Start the backend server (Python)
+2. Start the frontend development server (React)
+3. Open http://localhost:3000 in your browser
+4. Start chatting with the AI!
+
+### API Endpoints
+
+- `GET /` - API info
+- `GET /health` - Health check
+- `POST /api/query` - Process AI queries (requires auth)
+- `GET /api/conversations` - List conversations
+- `POST /auth/login` - Google OAuth login
+- `GET /docs` - Interactive API documentation
+
+---
+
 ## Prerequisites
 
 Before you begin, ensure you have:

@@ -60,6 +60,34 @@ See [API_ARCHITECTURE.md](API_ARCHITECTURE.md) for detailed documentation.
 - Node.js 16+ (for web UI)
 - **OpenAI API key** (Required - Get one at https://platform.openai.com/api-keys)
 
+## 🎯 Quick Reference Commands
+
+### Running the System
+```bash
+# Start production server
+python server.py
+
+# Start with auto-reload (development)
+uvicorn server:app --reload --port 8000
+
+# Run tests
+pytest                    # All tests
+pytest -m api            # API tests only
+pytest -m unit           # Unit tests only
+make test                # Using Makefile
+make test-coverage       # With coverage report
+```
+
+### Agent Routing Examples
+
+| User Query | Selected Agents | Reason |
+|------------|----------------|--------|
+| "What is Docker?" | research | Factual question |
+| "Explain machine learning" | research + writing | Needs explanation |
+| "Build a REST API" | code | Implementation needed |
+| "Compare React vs Vue, show code" | research + code | Analysis + implementation |
+| "Write tutorial on Python" | research + writing | Educational content |
+
 ## 🚀 Quick Start
 
 ### Option 1: Web Interface (Recommended)

@@ -6,7 +6,7 @@ Provides endpoints for Google OAuth login flow and token management.
 from typing import Optional
 from fastapi import APIRouter, Query
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.controllers.auth_controller import AuthController
 
@@ -20,8 +20,8 @@ class TokenResponse(BaseModel):
     token_type: str
     user: dict
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
@@ -33,6 +33,7 @@ class TokenResponse(BaseModel):
                 }
             }
         }
+    )
 
 
 @router.get("/google/login")
