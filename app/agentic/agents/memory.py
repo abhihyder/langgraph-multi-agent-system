@@ -74,24 +74,17 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
         # 3. Long-term semantic (relevant across all conversations)
         long_term_memories = []
         try:
+            # Use exclude_tags to filter out current conversation at API level
+            exclude_tags = [f"conversation_{conversation_id}"] if conversation_id else None
+            
             long_term_memories = automem.recall(
                 user_id=user_id,
                 conversation_id=None,
                 query=user_input,
-                top_k=10,  # Request more, will filter
-                use_vector=True
+                top_k=5,
+                use_vector=True,
+                exclude_tags=exclude_tags
             )
-            
-            # Filter out current conversation
-            if conversation_id:
-                current_conv_tag = f"conversation_{conversation_id}"
-                long_term_memories = [
-                    m for m in long_term_memories
-                    if current_conv_tag not in m.get("memory", {}).get("tags", [])
-                ]
-            
-            # Trim to top 3 after filtering
-            long_term_memories = long_term_memories[:3]
             
             print(f"[MEMORY AGENT] Long-term semantic: {len(long_term_memories)}")
         except Exception as e:

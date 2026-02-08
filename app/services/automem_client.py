@@ -29,7 +29,7 @@ class AutoMemClient:
             headers["Authorization"] = f"Bearer {self.api_token}"
         return headers
 
-    def recall(self, user_id: int, conversation_id: Optional[int] = None, query: Optional[str] = None, top_k: int = 5, use_vector: bool = True) -> List[Dict[str, Any]]:
+    def recall(self, user_id: int, conversation_id: Optional[int] = None, query: Optional[str] = None, top_k: int = 5, use_vector: bool = True, exclude_tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Retrieve relevant memories for the user/conversation using GET request.
         
         Args:
@@ -38,6 +38,7 @@ class AutoMemClient:
             query: Optional search query. If empty, uses tag-only mode (good for unindexed memories)
             top_k: Number of results to return
             use_vector: If False, omits query to use tag-only mode (fallback when embeddings not ready)
+            exclude_tags: Optional list of tags to exclude from results
         """
         url = f"{self.base_url}/recall"
         params: Dict[str, Any] = {
@@ -54,6 +55,10 @@ class AutoMemClient:
             params["tags"] = f"conversation_{conversation_id}"
         elif user_id:
             params["tags"] = f"user_{user_id}"
+        
+        # Add exclude_tags if provided
+        if exclude_tags:
+            params["exclude_tags"] = ",".join(exclude_tags)
             
         try:
             r = self.client.get(url, params=params, headers=self._headers())
