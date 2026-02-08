@@ -17,7 +17,7 @@ from app.agentic.agents.code import code_agent
 class TestGeneralAgent:
     """Test suite for General Agent"""
     
-    @patch('app.agentic.agents.general.ChatOpenAI')
+    @patch('app.agentic.agents.general.get_llm')
     @patch('app.agentic.agents.general.load_prompt')
     def test_general_agent_basic_response(self, mock_load_prompt, mock_llm_class):
         """Test general agent provides basic response"""
@@ -40,7 +40,7 @@ class TestGeneralAgent:
         assert result["general_output"] == "Nice to meet you! I'm an AI assistant."
         mock_llm.invoke.assert_called_once()
     
-    @patch('app.agentic.agents.general.ChatOpenAI')
+    @patch('app.agentic.agents.general.get_llm')
     @patch('app.agentic.agents.general.load_prompt')
     def test_general_agent_uses_conversation_history(self, mock_load_prompt, mock_llm_class):
         """Test general agent includes conversation history"""
@@ -71,7 +71,7 @@ class TestGeneralAgent:
         # Should include system message + history (excluding last message) + current query
         assert len(messages) >= 2  # At minimum system + query
     
-    @patch('app.agentic.agents.general.ChatOpenAI')
+    @patch('app.agentic.agents.general.get_llm')
     @patch('app.agentic.agents.general.load_prompt')
     def test_general_agent_uses_correct_temperature(self, mock_load_prompt, mock_llm_class):
         """Test general agent uses temperature 0.7 for conversational tone"""
@@ -91,8 +91,10 @@ class TestGeneralAgent:
         
         general_agent(state)  # type: ignore  # type: ignore
         
-        # Verify temperature is 0.7
-        mock_llm_class.assert_called_once_with(model="gpt-4o-mini", temperature=0.7)
+        # Verify temperature is 0.7 and uses configured LLM
+        mock_llm_class.assert_called_once()
+        call_args = mock_llm_class.call_args
+        assert call_args[1]['temperature'] == 0.7
 
 
 @pytest.mark.unit
@@ -100,7 +102,7 @@ class TestGeneralAgent:
 class TestResearchAgent:
     """Test suite for Research Agent"""
     
-    @patch('app.agentic.agents.research.ChatOpenAI')
+    @patch('app.agentic.agents.research.get_llm')
     @patch('app.agentic.agents.research.load_prompt')
     def test_research_agent_provides_researched_answer(self, mock_load_prompt, mock_llm_class):
         """Test research agent provides well-researched answer"""
@@ -122,7 +124,7 @@ class TestResearchAgent:
         
         assert result["research_output"] == "Based on research, AI is advancing rapidly..."
     
-    @patch('app.agentic.agents.research.ChatOpenAI')
+    @patch('app.agentic.agents.research.get_llm')
     @patch('app.agentic.agents.research.load_prompt')
     def test_research_agent_uses_correct_model(self, mock_load_prompt, mock_llm_class):
         """Test research agent uses appropriate model"""
@@ -150,7 +152,7 @@ class TestResearchAgent:
 class TestWritingAgent:
     """Test suite for Writing Agent"""
     
-    @patch('app.agentic.agents.writing.ChatOpenAI')
+    @patch('app.agentic.agents.writing.get_llm')
     @patch('app.agentic.agents.writing.load_prompt')
     def test_writing_agent_generates_content(self, mock_load_prompt, mock_llm_class):
         """Test writing agent generates written content"""
@@ -172,7 +174,7 @@ class TestWritingAgent:
         
         assert result["writing_output"] == "# Article Title\n\nThis is a well-written article..."
     
-    @patch('app.agentic.agents.writing.ChatOpenAI')
+    @patch('app.agentic.agents.writing.get_llm')
     @patch('app.agentic.agents.writing.load_prompt')
     def test_writing_agent_uses_research_output(self, mock_load_prompt, mock_llm_class):
         """Test writing agent can use research output"""
@@ -201,7 +203,7 @@ class TestWritingAgent:
 class TestCodeAgent:
     """Test suite for Code Agent"""
     
-    @patch('app.agentic.agents.code.ChatOpenAI')
+    @patch('app.agentic.agents.code.get_llm')
     @patch('app.agentic.agents.code.load_prompt')
     def test_code_agent_generates_code(self, mock_load_prompt, mock_llm_class):
         """Test code agent generates code"""
@@ -229,7 +231,7 @@ def factorial(n):
         assert result["code_output"] is not None
         assert "factorial" in result["code_output"]
     
-    @patch('app.agentic.agents.code.ChatOpenAI')
+    @patch('app.agentic.agents.code.get_llm')
     @patch('app.agentic.agents.code.load_prompt')
     def test_code_agent_provides_explanation(self, mock_load_prompt, mock_llm_class):
         """Test code agent provides code with explanation"""
@@ -265,8 +267,8 @@ This uses recursion to calculate the factorial."""
 class TestAgentIntegration:
     """Integration tests for agent cooperation"""
     
-    @patch('app.agentic.agents.research.ChatOpenAI')
-    @patch('app.agentic.agents.writing.ChatOpenAI')
+    @patch('app.agentic.agents.research.get_llm')
+    @patch('app.agentic.agents.writing.get_llm')
     @patch('app.agentic.agents.research.load_prompt')
     @patch('app.agentic.agents.writing.load_prompt')
     def test_research_to_writing_pipeline(self, mock_writing_prompt, mock_research_prompt,
