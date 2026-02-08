@@ -7,16 +7,16 @@ from ..agentic.state import AgentState
 from .automem_client import get_default_client
 
 if TYPE_CHECKING:
-    from langgraph.graph import CompiledGraph
+    from langgraph.graph.state import CompiledStateGraph
 
 
 class ChatService:
     """Service for handling chat interactions with the agent system."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         # Import here to avoid circular imports
         from ..agentic import app as agent_graph
-        self.agent_graph = agent_graph
+        self.agent_graph: "CompiledStateGraph" = agent_graph
     
     def process_chat(
         self, 

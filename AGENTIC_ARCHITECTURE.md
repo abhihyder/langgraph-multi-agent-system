@@ -49,12 +49,18 @@ If NO, stop. You're breaking the pattern.
 
 **Isolation Test**: Remove all other agents - yours should still work for its task.
 
-### 4. Context Separation
+### Context Separation
 **Two Agent Types**:
 - **Retrieval**: Query database/service, return data, NO LLM (fast)
 - **Processing**: Call LLM, generate content, USE retrieval context (slower)
 
 **Never mix**: If it fetches AND generates, split into two agents.
+
+**Aggregation Logic**:
+- Retrieval agents (knowledge, memory) provide context only
+- 1 processing agent → passthrough (skip aggregator)
+- 0 or 2+ processing agents → aggregator (synthesize outputs)
+- **Token savings**: ~40% reduction for single-agent queries
 
 ---
 
@@ -138,8 +144,13 @@ All YES → Proceed | Any NO → Redesign
 ```
 Entry: orchestrator
 Routes to: knowledge, memory, general, research, writing, code
-All route to: aggregator
-Exit: END
+
+Agents route to (conditionally):
+├─ passthrough (1 processing agent) → END
+└─ aggregator (0 or 2+ processing agents) → END
+
+Optimization: Skips aggregator when only 1 processing agent runs,
+even if retrieval agents (knowledge, memory) provided context.
 ```
 
 ### Memory System

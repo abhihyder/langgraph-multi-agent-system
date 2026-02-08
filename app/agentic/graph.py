@@ -9,7 +9,7 @@ This file constructs the LangGraph with:
 - Memory handled by AutoMem service (no LangGraph checkpointing)
 """
 
-from typing import Literal
+from typing import Literal, Dict, Any
 from langgraph.graph import StateGraph, END
 
 from config.settings import get_settings
@@ -21,16 +21,70 @@ from .aggregator import aggregator
 
 settings = get_settings()
 
+# Define agent types
+RETRIEVAL_AGENTS = {"knowledge", "memory"}
+PROCESSING_AGENTS = {"general", "research", "writing", "code"}
+
 
 def route_to_agents(state: AgentState) -> list[str]:
     """
     Conditional routing function that determines which agents to execute.
     Returns list of agent names based on orchestrator router decision.
+    
+    Ensures retrieval agents (knowledge, memory) execute BEFORE processing agents
+    since execution is sequential, not parallel.
     """
     selected = state.get("selected_agents", [])
     if not selected:
         return ["aggregator"]  # Skip to aggregator if no agents selected
-    return selected
+    
+    # Separate retrieval and processing agents
+    retrieval = [a for a in selected if a in RETRIEVAL_AGENTS]
+    processing = [a for a in selected if a in PROCESSING_AGENTS]
+    
+    # Return retrieval first, then processing (sequential execution order)
+    return retrieval + processing
+
+
+def needs_aggregation(state: AgentState) -> Literal["aggregator", "passthrough"]:
+    """
+    Determine if aggregation is needed or if we can use single agent output directly.
+    
+    Logic:
+    - Retrieval agents (knowledge, memory) provide context, don't need aggregation
+    - If only 1 processing agent ran, use its output directly (skip aggregator)
+    - If 0 or 2+ processing agents, use aggregator
+    
+    Returns:
+        "passthrough" - Use single processing agent output directly
+        "aggregator" - Need to aggregate multiple outputs
+    """
+    selected = state.get("selected_agents", [])
+    
+    # Count processing agents
+    processing_agents_selected = [a for a in selected if a in PROCESSING_AGENTS]
+    
+    # If exactly 1 processing agent, skip aggregator
+    if len(processing_agents_selected) == 1:
+        return "passthrough"
+    
+    # If 0 or multiple processing agents, aggregate
+    return "aggregator"
+
+
+def passthrough_output(state: AgentState) -> Dict[str, Any]:
+    """
+    Pass single processing agent output directly as final output.
+    Skips unnecessary aggregator LLM call.
+    """
+    # Find which processing agent ran
+    for agent_name in PROCESSING_AGENTS:
+        output = state.get(f"{agent_name}_output")
+        if output:
+            return {"final_output": output}
+    
+    # Fallback (shouldn't happen)
+    return {"final_output": "No response generated."}
 
 
 def build_graph():
@@ -53,6 +107,7 @@ def build_graph():
     workflow.add_node("research", research_agent)
     workflow.add_node("writing", writing_agent)
     workflow.add_node("code", code_agent)
+    workflow.add_node("passthrough", passthrough_output)  # NEW: Direct output
     workflow.add_node("aggregator", aggregator)
     
     # Set entry point
@@ -73,15 +128,20 @@ def build_graph():
         }
     )
     
-    # All agents flow to aggregator
-    workflow.add_edge("knowledge", "aggregator")
-    workflow.add_edge("memory", "aggregator")
-    workflow.add_edge("general", "aggregator")
-    workflow.add_edge("research", "aggregator")
-    workflow.add_edge("writing", "aggregator")
-    workflow.add_edge("code", "aggregator")
+    # All agents route conditionally to either passthrough or aggregator
+    # This checks if only 1 processing agent ran
+    for agent in ["knowledge", "memory", "general", "research", "writing", "code"]:
+        workflow.add_conditional_edges(
+            agent,
+            needs_aggregation,
+            {
+                "passthrough": "passthrough",
+                "aggregator": "aggregator"
+            }
+        )
     
-    # Aggregator is the end
+    # Both end nodes go to END
+    workflow.add_edge("passthrough", END)
     workflow.add_edge("aggregator", END)
     
     # Compile without checkpointing (memory handled by AutoMem)
