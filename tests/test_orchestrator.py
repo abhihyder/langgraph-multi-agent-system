@@ -15,7 +15,7 @@ from app.agentic.orchestrator import orchestrator_router, should_route_to_agents
 class TestOrchestratorRouter:
     """Test suite for Orchestrator routing logic"""
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_routes_to_code_agent(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator routes coding requests to code agent"""
@@ -46,7 +46,7 @@ class TestOrchestratorRouter:
         assert result["selected_agents"] == ["code"]
         mock_llm.invoke.assert_called_once()
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_routes_to_research_agent(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator routes research requests to research agent"""
@@ -72,7 +72,7 @@ class TestOrchestratorRouter:
         assert result["intent"] == "User needs to research AI trends"
         assert result["selected_agents"] == ["research"]
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_routes_to_writing_agent(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator routes writing requests to writing agent"""
@@ -98,7 +98,7 @@ class TestOrchestratorRouter:
         assert result["intent"] == "User wants to write an article"
         assert result["selected_agents"] == ["writing"]
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_routes_to_general_agent(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator routes general questions to general agent"""
@@ -124,7 +124,7 @@ class TestOrchestratorRouter:
         assert result["intent"] == "General conversation"
         assert result["selected_agents"] == ["general"]
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_routes_to_multiple_agents(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator can route to multiple agents"""
@@ -151,7 +151,7 @@ class TestOrchestratorRouter:
         assert "research" in result["selected_agents"]
         assert "writing" in result["selected_agents"]
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_handles_json_in_code_block(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator parses JSON wrapped in markdown code blocks"""
@@ -181,7 +181,7 @@ class TestOrchestratorRouter:
         assert result["intent"] == "User needs coding help"
         assert result["selected_agents"] == ["code"]
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_handles_invalid_json(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator handles invalid JSON gracefully"""
@@ -205,7 +205,7 @@ class TestOrchestratorRouter:
         assert "fallback" in result["intent"]
         assert result["selected_agents"] == ["writing"]
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_uses_correct_model(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator uses correct model and temperature"""
@@ -225,7 +225,9 @@ class TestOrchestratorRouter:
         orchestrator_router(state)  # type: ignore  # type: ignore
         
         # Verify LLM was initialized with correct params
-        mock_llm_class.assert_called_once_with(model="gpt-4o-mini", temperature=0)
+        mock_llm_class.assert_called_once()
+        call_args = mock_llm_class.call_args
+        assert call_args[1]['temperature'] == 0.0
     
     def test_should_route_to_agents_returns_selected_agents(self):
         """Test should_route_to_agents returns correct agent list"""
@@ -245,7 +247,7 @@ class TestOrchestratorRouter:
         
         assert result == []
     
-    @patch('app.agentic.orchestrator.ChatOpenAI')
+    @patch('app.agentic.orchestrator.get_llm')
     @patch('app.agentic.orchestrator.load_prompt')
     def test_orchestrator_includes_user_input_in_prompt(self, mock_load_prompt, mock_llm_class):
         """Test orchestrator includes user input in LLM prompt"""

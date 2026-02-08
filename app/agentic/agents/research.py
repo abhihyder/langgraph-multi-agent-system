@@ -3,11 +3,12 @@ Research Agent - Provides factual, research-based information
 """
 
 from typing import Dict, Any
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..state import AgentState
 from ...utils.helpers import load_prompt
+from ...utils.llm_factory import get_llm
+from config.llm_config import get_llm_config
 
 
 def research_agent(state: AgentState) -> Dict[str, Any]:
@@ -20,6 +21,7 @@ def research_agent(state: AgentState) -> Dict[str, Any]:
     Returns:
         Updated state with research_output
     """
+    llm_config = get_llm_config()
     user_input = state["user_input"]
     intent = state.get("intent", "")
     
@@ -30,8 +32,11 @@ def research_agent(state: AgentState) -> Dict[str, Any]:
     # Load research prompt
     research_prompt = load_prompt("research.md")
     
-    # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
+    # Initialize LLM with configurable provider and model
+    llm = get_llm(
+        llm_config.RESEARCH_LLM,
+        temperature=llm_config.RESEARCH_TEMPERATURE
+    )
     
     # Build context section
     context_parts = []

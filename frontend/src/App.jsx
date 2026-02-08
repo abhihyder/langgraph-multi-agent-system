@@ -88,7 +88,7 @@ function App() {
       setApiStatus(response.data)
     } catch (error) {
       console.error('API health check failed:', error)
-      setApiStatus({ status: 'error', api_key_configured: false })
+      setApiStatus({ status: 'error' })
     }
   }
 
@@ -195,7 +195,9 @@ function App() {
                     : 'error'
                 }`}
               >
-                {apiStatus.api_key_configured ? '🟢 Connected' : '🔴 API Key Missing'}
+                {apiStatus.status === 'ok' || apiStatus.status === 'healthy'
+                  ? '🟢 Connected'
+                  : '🔴 Disconnected'}
               </span>
             )}
             <button onClick={clearChat} className="clear-btn" title="Clear chat">

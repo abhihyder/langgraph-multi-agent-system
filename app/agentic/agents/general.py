@@ -9,11 +9,12 @@ This agent handles:
 """
 
 from typing import Dict, Any, List
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
 
 from ..state import AgentState
 from ...utils.helpers import load_prompt
+from ...utils.llm_factory import get_llm
+from config.llm_config import get_llm_config
 
 
 def general_agent(state: AgentState) -> Dict[str, Any]:
@@ -26,6 +27,7 @@ def general_agent(state: AgentState) -> Dict[str, Any]:
     Returns:
         Updated state with general_output
     """
+    llm_config = get_llm_config()
     user_input = state["user_input"]
     intent = state.get("intent", "")
     
@@ -36,8 +38,11 @@ def general_agent(state: AgentState) -> Dict[str, Any]:
     # Load general prompt
     general_prompt = load_prompt("general.md")
     
-    # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+    # Initialize LLM with configurable provider and model
+    llm = get_llm(
+        llm_config.GENERAL_LLM,
+        temperature=0.7
+    )
     
     # Build context section
     context_parts = []

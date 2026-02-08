@@ -9,10 +9,11 @@ The aggregator:
 """
 
 from typing import Dict, Any
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from .state import AgentState
+from ..utils.llm_factory import get_llm
+from config.llm_config import get_llm_config
 
 
 def aggregator(state: AgentState) -> Dict[str, Any]:
@@ -25,6 +26,7 @@ def aggregator(state: AgentState) -> Dict[str, Any]:
     Returns:
         Updated state with final_output
     """
+    llm_config = get_llm_config()
     user_input = state["user_input"]
     intent = state.get("intent", "")
     
@@ -72,8 +74,11 @@ def aggregator(state: AgentState) -> Dict[str, Any]:
     
     # If multiple outputs or context exists, aggregate intelligently
     if len(response_parts) > 1 or context_parts:
-        # Initialize LLM for aggregation
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
+        # Initialize LLM for aggregation with configurable provider and model
+        llm = get_llm(
+            llm_config.AGGREGATOR_LLM,
+            temperature=llm_config.AGGREGATOR_TEMPERATURE
+        )
         
         aggregation_prompt = """
 You are an Aggregator Agent. Your job is to synthesize context and agent outputs into one coherent final response.

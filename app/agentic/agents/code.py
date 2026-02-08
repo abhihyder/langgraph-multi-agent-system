@@ -3,11 +3,12 @@ Code Agent - Generates production-quality code
 """
 
 from typing import Dict, Any
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..state import AgentState
 from ...utils.helpers import load_prompt
+from ...utils.llm_factory import get_llm
+from config.llm_config import get_llm_config
 
 
 def code_agent(state: AgentState) -> Dict[str, Any]:
@@ -20,6 +21,7 @@ def code_agent(state: AgentState) -> Dict[str, Any]:
     Returns:
         Updated state with code_output
     """
+    llm_config = get_llm_config()
     user_input = state["user_input"]
     intent = state.get("intent", "")
     
@@ -31,8 +33,11 @@ def code_agent(state: AgentState) -> Dict[str, Any]:
     # Load code prompt
     code_prompt = load_prompt("code.md")
     
-    # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
+    # Initialize LLM with configurable provider and model
+    llm = get_llm(
+        llm_config.CODE_LLM,
+        temperature=llm_config.CODE_TEMPERATURE
+    )
     
     # Build context for code generation
     context = f"""Task Intent: {intent}
