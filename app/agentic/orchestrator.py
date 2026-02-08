@@ -9,11 +9,12 @@ The Orchestrator Agent NEVER answers questions directly. It only:
 
 import json
 from typing import Dict, Any
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from .state import AgentState
 from ..utils.helpers import load_prompt
+from ..utils.llm_factory import get_llm
+from config.llm_config import get_llm_config
 
 
 def orchestrator_router(state: AgentState) -> Dict[str, Any]:
@@ -26,13 +27,17 @@ def orchestrator_router(state: AgentState) -> Dict[str, Any]:
     Returns:
         Updated state with intent and selected_agents
     """
+    llm_config = get_llm_config()
     user_input = state["user_input"]
     
     # Load orchestrator prompt
     orchestrator_prompt = load_prompt("orchestrator.md")
     
-    # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    # Initialize LLM with configurable provider and model
+    llm = get_llm(
+        llm_config.ORCHESTRATOR_LLM,
+        temperature=llm_config.ORCHESTRATOR_TEMPERATURE
+    )
     
     # Create messages
     messages = [
