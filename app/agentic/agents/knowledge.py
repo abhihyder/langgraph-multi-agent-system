@@ -6,8 +6,10 @@ This is a retrieval agent (no LLM) that fetches relevant company policies and do
 from typing import Dict, Any
 from ..state import AgentState
 from ...services.automem_client import get_default_client
+from ...utils.tracing import trace_agent
 
 
+@trace_agent("knowledge_agent", run_type="retriever", tags=["agent", "knowledge", "retrieval"])
 def knowledge_agent(state: AgentState) -> Dict[str, Any]:
     """
     Retrieval agent that fetches relevant global knowledge (company policies, docs).
@@ -20,8 +22,6 @@ def knowledge_agent(state: AgentState) -> Dict[str, Any]:
         Dict with knowledge_output containing retrieved documents
     """
     user_input = state["user_input"]
-    
-    print(f"\n[KNOWLEDGE AGENT] Retrieving global knowledge for: {user_input[:50]}...")
     
     automem = get_default_client()
     

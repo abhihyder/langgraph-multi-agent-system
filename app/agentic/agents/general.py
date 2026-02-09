@@ -14,9 +14,11 @@ from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
 from ..state import AgentState
 from ...utils.helpers import load_prompt
 from ...utils.llm_factory import get_llm
+from ...utils.tracing import trace_agent
 from config.llm_config import get_llm_config
 
 
+@trace_agent("general_agent", run_type="chain", tags=["agent", "general"])
 def general_agent(state: AgentState) -> Dict[str, Any]:
     """
     General agent that handles generic queries and conversation.

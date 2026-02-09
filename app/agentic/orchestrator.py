@@ -14,9 +14,11 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from .state import AgentState
 from ..utils.helpers import load_prompt
 from ..utils.llm_factory import get_llm
+from ..utils.tracing import trace_agent
 from config.llm_config import get_llm_config
 
 
+@trace_agent("orchestrator", run_type="chain", tags=["orchestrator", "router"])
 def orchestrator_router(state: AgentState) -> Dict[str, Any]:
     """
     Orchestrator agent that routes requests to appropriate specialized agents.
@@ -64,9 +66,7 @@ def orchestrator_router(state: AgentState) -> Dict[str, Any]:
             "intent": routing_decision.get("intent", ""),
             "selected_agents": routing_decision.get("selected_agents", [])
         }
-    except json.JSONDecodeError as e:
-        print(f"Error parsing orchestrator response: {e}")
-        print(f"Response content: {response.content}")
+    except json.JSONDecodeError:
         # Fallback: route to writing agent
         return {
             "intent": "fallback - parsing error",

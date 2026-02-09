@@ -1,5 +1,5 @@
 """
-LangGraph Workflow Definition
+LangGraph Workflow Definition with LangSmith Tracing
 
 This file constructs the LangGraph with:
 - Orchestrator router node
@@ -7,6 +7,7 @@ This file constructs the LangGraph with:
 - Aggregator node
 - Conditional routing logic
 - Memory handled by AutoMem service (no LangGraph checkpointing)
+- LangSmith tracing for monitoring and debugging
 """
 
 from typing import Literal, Dict, Any
@@ -26,49 +27,75 @@ RETRIEVAL_AGENTS = {"knowledge", "memory"}
 PROCESSING_AGENTS = {"general", "research", "writing", "code"}
 
 
-def route_to_agents(state: AgentState) -> list[str]:
+def route_from_orchestrator(state: AgentState) -> str:
     """
-    Conditional routing function that determines which agents to execute.
-    Returns list of agent names based on orchestrator router decision.
+    Route from orchestrator to the first agent or aggregator.
     
-    Ensures retrieval agents (knowledge, memory) execute BEFORE processing agents
-    since execution is sequential, not parallel.
+    Priority order:
+    1. Retrieval agents first (knowledge, memory) - they provide context
+    2. Processing agents second (general, research, writing, code)
+    3. Aggregator if no agents selected
     """
     selected = state.get("selected_agents", [])
     if not selected:
-        return ["aggregator"]  # Skip to aggregator if no agents selected
+        return "aggregator"
     
-    # Separate retrieval and processing agents
-    retrieval = [a for a in selected if a in RETRIEVAL_AGENTS]
-    processing = [a for a in selected if a in PROCESSING_AGENTS]
+    # Check for retrieval agents first (they should execute before processing)
+    for agent in ["knowledge", "memory"]:
+        if agent in selected:
+            return agent
     
-    # Return retrieval first, then processing (sequential execution order)
-    return retrieval + processing
+    # Then check for processing agents
+    for agent in ["general", "research", "writing", "code"]:
+        if agent in selected:
+            return agent
+    
+    return "aggregator"
 
 
-def needs_aggregation(state: AgentState) -> Literal["aggregator", "passthrough"]:
+def route_from_agent(state: AgentState) -> str:
     """
-    Determine if aggregation is needed or if we can use single agent output directly.
+    Route from current agent to the next agent or to aggregation.
     
-    Logic:
-    - Retrieval agents (knowledge, memory) provide context, don't need aggregation
-    - If only 1 processing agent ran, use its output directly (skip aggregator)
-    - If 0 or 2+ processing agents, use aggregator
-    
-    Returns:
-        "passthrough" - Use single processing agent output directly
-        "aggregator" - Need to aggregate multiple outputs
+    Returns the next agent in priority order, or routes to aggregation.
+    Priority: retrieval agents → processing agents → aggregation
     """
     selected = state.get("selected_agents", [])
     
-    # Count processing agents
+    # Get list of agents that have already executed (have output)
+    executed = set()
+    if state.get("knowledge_output") is not None:
+        executed.add("knowledge")
+    if state.get("memory_output") is not None:
+        executed.add("memory")
+    if state.get("general_output") is not None:
+        executed.add("general")
+    if state.get("research_output") is not None:
+        executed.add("research")
+    if state.get("writing_output") is not None:
+        executed.add("writing")
+    if state.get("code_output") is not None:
+        executed.add("code")
+    
+    # Find next agent to execute (in priority order)
+    # Retrieval agents first
+    for agent in ["knowledge", "memory"]:
+        if agent in selected and agent not in executed:
+            return agent
+    
+    # Then processing agents
+    for agent in ["general", "research", "writing", "code"]:
+        if agent in selected and agent not in executed:
+            return agent
+    
+    # All selected agents have executed, check if we need aggregation
     processing_agents_selected = [a for a in selected if a in PROCESSING_AGENTS]
     
-    # If exactly 1 processing agent, skip aggregator
+    # If exactly 1 processing agent, skip aggregator (passthrough)
     if len(processing_agents_selected) == 1:
         return "passthrough"
     
-    # If 0 or multiple processing agents, aggregate
+    # Otherwise, aggregate
     return "aggregator"
 
 
@@ -89,12 +116,13 @@ def passthrough_output(state: AgentState) -> Dict[str, Any]:
 
 def build_graph():
     """
-    Build and compile the LangGraph workflow.
+    Build and compile the LangGraph workflow with LangSmith tracing.
     
     Memory is handled by AutoMem service (no LangGraph checkpointing).
+    LangSmith tracing is automatically enabled via environment variables.
     
     Returns:
-        Compiled graph
+        Compiled graph with tracing enabled
     """
     # Create graph with shared state
     workflow = StateGraph(AgentState)
@@ -113,10 +141,10 @@ def build_graph():
     # Set entry point
     workflow.set_entry_point("orchestrator")
     
-    # Add conditional edges from orchestrator to agents
+    # Route from orchestrator to first agent (retrieval agents have priority)
     workflow.add_conditional_edges(
         "orchestrator",
-        route_to_agents,
+        route_from_orchestrator,
         {
             "knowledge": "knowledge",
             "memory": "memory",
@@ -128,13 +156,19 @@ def build_graph():
         }
     )
     
-    # All agents route conditionally to either passthrough or aggregator
-    # This checks if only 1 processing agent ran
+    # Each agent routes to the next agent or to aggregation
+    # This ensures sequential execution: retrieval → processing → aggregation
     for agent in ["knowledge", "memory", "general", "research", "writing", "code"]:
         workflow.add_conditional_edges(
             agent,
-            needs_aggregation,
+            route_from_agent,
             {
+                "knowledge": "knowledge",
+                "memory": "memory",
+                "general": "general",
+                "research": "research",
+                "writing": "writing",
+                "code": "code",
                 "passthrough": "passthrough",
                 "aggregator": "aggregator"
             }
@@ -145,6 +179,7 @@ def build_graph():
     workflow.add_edge("aggregator", END)
     
     # Compile without checkpointing (memory handled by AutoMem)
+    # LangSmith tracing will automatically track all LLM calls and graph execution
     return workflow.compile()
 
 

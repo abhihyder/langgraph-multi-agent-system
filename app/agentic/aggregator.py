@@ -13,9 +13,11 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from .state import AgentState
 from ..utils.llm_factory import get_llm
+from ..utils.tracing import trace_agent
 from config.llm_config import get_llm_config
 
 
+@trace_agent("aggregator", run_type="chain", tags=["aggregator", "synthesis"])
 def aggregator(state: AgentState) -> Dict[str, Any]:
     """
     Aggregates outputs from specialized agents into a final response.
