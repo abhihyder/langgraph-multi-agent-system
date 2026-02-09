@@ -6,8 +6,10 @@ This is a retrieval agent (no LLM) that fetches relevant user-specific memories.
 from typing import Dict, Any, List
 from ..state import AgentState
 from ...services.automem_client import get_default_client
+from ...utils.tracing import trace_agent
 
 
+@trace_agent("memory_agent", run_type="retriever", tags=["agent", "memory", "retrieval"])
 def memory_agent(state: AgentState) -> Dict[str, Any]:
     """
     Retrieval agent that fetches user's conversation history and memories.
@@ -28,10 +30,7 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
     user_id = state.get("user_id")
     conversation_id = state.get("conversation_id")
     
-    print(f"\n[MEMORY AGENT] Retrieving user memories for user {user_id}, conversation {conversation_id}")
-    
     if not user_id:
-        print("[MEMORY AGENT] No user_id provided, skipping memory retrieval")
         return {"memory_output": None}
     
     automem = get_default_client()
@@ -58,7 +57,7 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
                 user_id=user_id,
                 conversation_id=conversation_id,
                 query=user_input,
-                top_k=3,
+                top_k=10,
                 use_vector=True
             )
             
@@ -81,7 +80,7 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
                 user_id=user_id,
                 conversation_id=None,
                 query=user_input,
-                top_k=5,
+                top_k=15,
                 use_vector=True,
                 exclude_tags=exclude_tags
             )

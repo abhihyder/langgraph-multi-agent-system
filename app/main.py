@@ -1,21 +1,24 @@
 """
-Main Entry Point for Agentic AI System
+Main Entry Point for Agentic AI System with LangSmith Tracing
 
 This module provides the interface to interact with the multi-agent system.
-Supports both CLI mode and API server mode.
+Supports both CLI mode and API server mode with LangSmith monitoring.
 """
 
 import os
 from typing import Optional
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage
 
 from .agentic import app
 from .agentic import AgentState
+from .utils.tracing import initialize_langsmith
 
 
 # Load environment variables
 load_dotenv()
+
+# Initialize LangSmith tracing
+initialize_langsmith()
 
 
 def run_agent_system(user_input: str, verbose: bool = False) -> str:
@@ -32,10 +35,11 @@ def run_agent_system(user_input: str, verbose: bool = False) -> str:
     # Initialize state
     initial_state: AgentState = {
         "user_input": user_input,
-        "messages": [HumanMessage(content=user_input)],
         "conversation_id": None,
         "user_id": None,
         "intent": None,
+        "knowledge_output": None,
+        "memory_output": None,
         "general_output": None,
         "research_output": None,
         "writing_output": None,

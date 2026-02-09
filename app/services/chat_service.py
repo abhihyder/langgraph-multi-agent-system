@@ -1,10 +1,11 @@
 """
-Chat Service - Handles business logic for chat interactions
+Chat Service - Handles business logic for chat interactions with LangSmith tracing
 """
 
 from typing import Dict, Any, Optional, TYPE_CHECKING
 from ..agentic.state import AgentState
 from .automem_client import get_default_client
+from ..utils.tracing import trace_service, trace_context, add_trace_metadata
 
 if TYPE_CHECKING:
     from langgraph.graph.state import CompiledStateGraph
@@ -18,6 +19,7 @@ class ChatService:
         from ..agentic import app as agent_graph
         self.agent_graph: "CompiledStateGraph" = agent_graph
     
+    @trace_service("chat_service", operation="process_chat", tags=["chat", "main-flow"])
     def process_chat(
         self, 
         user_input: str, 
@@ -41,6 +43,14 @@ class ChatService:
         """
         automem = get_default_client()
         
+        # Add trace metadata for monitoring
+        add_trace_metadata({
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "user_input_length": len(user_input),
+            "has_context": context is not None
+        })
+        
         # Build initial state - memory retrieval happens in memory_agent
         initial_state: AgentState = {
             "user_input": user_input,
@@ -58,8 +68,23 @@ class ChatService:
         }
         
         # Execute through orchestrator -> retrieval/processing agents -> aggregator
-        print(f"[CHAT] User {user_id}, Conversation {conversation_id}: {user_input[:50]}...")
-        result = self.agent_graph.invoke(initial_state)
+        with trace_context(
+            name="agent_graph_execution",
+            run_type="chain",
+            metadata={
+                "user_id": user_id,
+                "conversation_id": conversation_id,
+            },
+            tags=["graph", "multi-agent"]
+        ):
+            result = self.agent_graph.invoke(initial_state)
+        
+        # Add final result metadata to trace
+        add_trace_metadata({
+            "intent": result.get("intent"),
+            "agents_used": result.get("selected_agents", []),
+            "response_length": len(result.get("final_output", ""))
+        })
         
         # Store user message and AI response in AutoMem
         try:
@@ -70,9 +95,8 @@ class ChatService:
                 content=user_input,
                 scope="conversation"
             )
-            print(f"[AutoMem] Stored user message")
         except Exception as e:
-            print(f"[AutoMem] Store user error: {e}")
+            pass  # Silently handle AutoMem errors
 
         ai_response = result.get("final_output") or ""
         try:
@@ -83,9 +107,8 @@ class ChatService:
                 content=ai_response,
                 scope="conversation"
             )
-            print(f"[AutoMem] Stored AI response")
         except Exception as e:
-            print(f"[AutoMem] Store AI error: {e}")
+            pass  # Silently handle AutoMem errors
         
         return {
             "response": result.get("final_output", "No response generated"),

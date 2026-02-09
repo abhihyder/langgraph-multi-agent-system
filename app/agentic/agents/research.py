@@ -8,9 +8,11 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from ..state import AgentState
 from ...utils.helpers import load_prompt
 from ...utils.llm_factory import get_llm
+from ...utils.tracing import trace_agent
 from config.llm_config import get_llm_config
 
 
+@trace_agent("research_agent", run_type="chain", tags=["agent", "research"])
 def research_agent(state: AgentState) -> Dict[str, Any]:
     """
     Research agent that provides factual, analytical information.

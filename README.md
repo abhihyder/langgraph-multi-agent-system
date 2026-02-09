@@ -45,6 +45,7 @@ See [API_ARCHITECTURE.md](API_ARCHITECTURE.md) for detailed documentation.
 
 - **🌐 Web Interface**: Beautiful chat UI with markdown rendering and syntax highlighting
 - **💻 CLI Interface**: Interactive command-line interface
+- **📊 LangSmith Tracing**: Complete observability and monitoring of all agent operations
 - **🤖 Three Specialized Agents**:
   - **Research Agent**: Provides factual information, comparisons, and analysis
   - **Writing Agent**: Creates well-structured, human-friendly content
@@ -53,6 +54,7 @@ See [API_ARCHITECTURE.md](API_ARCHITECTURE.md) for detailed documentation.
 - **🔀 Smart Routing**: Orchestrator agent determines which agents to invoke
 - **🔄 Intelligent Aggregation**: Synthesizes multiple agent outputs
 - **⚡ REST API**: FastAPI backend for easy integration
+- **🔍 Performance Monitoring**: Track latency, costs, and success rates
 
 ## 📋 Prerequisites
 
@@ -109,6 +111,13 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env and add your OPENAI_API_KEY (REQUIRED)
 # Get your key from: https://platform.openai.com/api-keys
+
+# Optional: Add LangSmith for tracing (Recommended for production)
+# Get your key from: https://smith.langchain.com/
+# Add to .env:
+#   LANGCHAIN_TRACING_V2=true
+#   LANGCHAIN_API_KEY=your_langsmith_key_here
+#   LANGCHAIN_PROJECT=multi-agent-ai-system
 ```
 
 #### Step 2: Start Production API Server
@@ -539,16 +548,70 @@ npm run build
 ### Production Considerations
 
 - **Error Handling**: Retry logic and fallbacks
-- **Monitoring**: LangSmith or OpenTelemetry integration
+- **Monitoring**: LangSmith tracing for complete observability (see below)
 - **Rate Limiting**: API call management
 - **Caching**: Redis for repeated queries
 - **Authentication**: Secure API endpoints
-- **Cost Tracking**: Monitor LLM usage
+- **Cost Tracking**: Monitor LLM usage via LangSmith dashboard
 - **CORS**: Configure allowed origins in production
 - **Environment Variables**: Use secure secret management
 - **Database**: PostgreSQL with connection pooling
 - **Streaming**: Streaming responses in web UI
 - **Persistence**: Chat history and user data
+
+## 📊 LangSmith Tracing & Monitoring
+
+This application includes comprehensive **LangSmith** integration for complete observability of your agentic AI system.
+
+### What Gets Traced?
+
+- ✅ **All LLM calls** with prompts, responses, and token usage
+- ✅ **Agent routing decisions** by the orchestrator
+- ✅ **Individual agent executions** (research, writing, code, etc.)
+- ✅ **Knowledge and memory retrieval** operations
+- ✅ **Final response aggregation**
+- ✅ **Complete execution timeline** with latency metrics
+- ✅ **Custom metadata** (user_id, conversation_id, intent, etc.)
+
+### Quick Setup
+
+1. **Sign up for LangSmith**: Visit [https://smith.langchain.com/](https://smith.langchain.com/)
+2. **Get your API key**: Create an API key in the LangSmith dashboard
+3. **Configure environment variables** in your `.env` file:
+
+```bash
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your_langsmith_api_key_here
+LANGCHAIN_PROJECT=multi-agent-ai-system
+```
+
+4. **Start your application**: Tracing is automatically enabled!
+
+### View Traces
+
+- Open your LangSmith dashboard at [https://smith.langchain.com/](https://smith.langchain.com/)
+- Navigate to your project ("multi-agent-ai-system" by default)
+- See real-time traces of all agent operations
+- Filter by tags: `orchestrator`, `agent`, `research`, `writing`, `code`, `retrieval`, etc.
+
+### Benefits
+
+- 🔍 **Debug complex agent flows** - See exactly which agents ran and why
+- ⚡ **Identify bottlenecks** - Track latency at each step
+- 💰 **Monitor costs** - See token usage and costs per request
+- 🐛 **Trace errors** - Quickly find the source of failures
+- 📈 **Analyze patterns** - Understand how users interact with your system
+- ✅ **Evaluate outputs** - Add feedback and ratings to traces
+
+### Detailed Documentation
+
+See [docs/LANGSMITH_SETUP.md](docs/LANGSMITH_SETUP.md) for:
+- Complete setup instructions
+- Advanced configuration options
+- How to add custom metadata and tags
+- Using the LangSmith dashboard
+- Best practices for production monitoring
+- Troubleshooting guide
 
 ## 🐛 Troubleshooting
 
@@ -574,6 +637,7 @@ npm run build
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and design
 - [TESTING.md](TESTING.md) - Testing guide and best practices
 - [INSTRUCTION.md](INSTRUCTION.md) - Implementation guide
+- [LANGSMITH_SETUP.md](docs/LANGSMITH_SETUP.md) - **LangSmith tracing and monitoring guide**
 - [FUTURE_IMPROVEMENTS_PLAN.md](FUTURE_IMPROVEMENTS_PLAN.md) - Roadmap and planned features
 
 ## 📝 Development Notes
