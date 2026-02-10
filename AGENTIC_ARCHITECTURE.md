@@ -39,10 +39,12 @@ If NO, stop. You're breaking the pattern.
 - Retrieval agents → `{name}_output` (NO LLM)
 - Processing agents → `{name}_output` (WITH LLM)
 - Aggregator → `final_output`
+- All agents → Append to `executed_agents` (prevents infinite loops)
 
 **Red Flags**:
 - Modifying `user_input`? STOP - it's read-only
 - Writing multiple `_output` fields? STOP - one agent, one field
+- Not updating `executed_agents`? STOP - routing will break
 
 ### 3. No Coordination
 **Rule**: Agents are blind to each other. Run independently.
@@ -55,6 +57,12 @@ If NO, stop. You're breaking the pattern.
 - **Processing**: Call LLM, generate content, USE retrieval context (slower)
 
 **Never mix**: If it fetches AND generates, split into two agents.
+
+**Memory Driver Abstraction**:
+- Retrieval agents use `get_memory_driver()` for seamless backend switching
+- Supports multiple backends: AutoMem (HTTP service) or PGVector (PostgreSQL)
+- Configuration: Set `MEMORY_DRIVER` environment variable (automem | pgvector)
+- Same API interface regardless of backend
 
 **Aggregation Logic**:
 - Retrieval agents (knowledge, memory) provide context only
@@ -154,11 +162,13 @@ even if retrieval agents (knowledge, memory) provided context.
 ```
 
 ### Memory System
-- **AutoMem** (external HTTP service) - NOT LangGraph checkpointing
+- **Configurable Driver**: AutoMem (external HTTP service) or PGVector (PostgreSQL) - NOT LangGraph checkpointing
+- **Selection**: Set `MEMORY_DRIVER` environment variable (automem | pgvector)
 - **Global knowledge**: `tag:global_knowledge` + `category_{type}`
 - **User memory**: `tag:user_{id}` + `conversation_{id}`
-- Retrieval agents query AutoMem
+- Retrieval agents query via driver abstraction (`get_memory_driver()`)
 - Processing agents consume via state
+- Seamless switching: Same API, different backends
 
 ### Service Layer Flow
 ```
@@ -177,14 +187,17 @@ API Route → ChatService → LangGraph (Orchestrator → Agents → Aggregator)
 4. **Update** `prompts/orchestrator.md`: Document when to use
 5. **Update** `app/agentic/aggregator.py`: Handle new output
 6. **Create** `prompts/{name}.md`: Agent instructions
-7. **Write tests** in `tests/test_agents.py`
-8. **Run tests**: All tests must pass before merging (`pytest`)
+7. **Ensure** agent appends to `executed_agents` list
+8. **Write tests** in `tests/test_agents.py`
+9. **Run tests**: All tests must pass before merging (`pytest`)
 
 ### Adding Retrieval Agent
 Same steps, but:
 - NO LLM calls
+- Use `get_memory_driver()` for memory/knowledge access
 - Query data source directly
 - Fast execution (< 200ms)
+- Append to `executed_agents` list
 - All tests must pass
 
 ---
@@ -207,9 +220,11 @@ Same steps, but:
 **Agent Code**:
 - [ ] One clear job (one sentence description)
 - [ ] Reads from state, writes ONE field
+- [ ] Appends agent name to `executed_agents` list
 - [ ] No references to other agents' outputs
 - [ ] Processing agents use retrieval context
 - [ ] Retrieval agents don't call LLM
+- [ ] Retrieval agents use `get_memory_driver()`
 - [ ] Prompts from files, not hardcoded
 - [ ] All tests pass (`pytest` runs successfully)
 
@@ -226,6 +241,7 @@ Same steps, but:
 - [ ] Each agent has ONE output field
 - [ ] No field ownership overlap
 - [ ] Input fields read-only
+- [ ] Agent appends to `executed_agents` list
 
 **Testing**:
 - [ ] New/modified functions have test coverage

@@ -47,19 +47,89 @@
                └──────────────────────────────────┘
 ```
 
+## Memory Driver System
+
+### Architecture Pattern
+
+**Inspiration**: Laravel's database driver pattern - seamless backend switching via configuration
+
+**Location**: `app/core/memory/`
+
+**Components**:
+1. **BaseMemoryDriver** (`base.py`): Abstract interface defining memory operations
+2. **AutoMemDriver** (`automem_driver.py`): Wraps external AutoMem HTTP service
+3. **PGVectorDriver** (`pgvector_driver.py`): PostgreSQL with pgvector extension
+4. **MemoryDriverManager** (`manager.py`): Factory for driver instantiation
+
+### Driver Selection
+
+**Configuration**: Set `MEMORY_DRIVER` environment variable
+```bash
+# Use external AutoMem service (default)
+MEMORY_DRIVER=automem
+
+# Use PostgreSQL with pgvector
+MEMORY_DRIVER=pgvector
+```
+
+**Automatic Switching**: All agents use `get_memory_driver()` which returns the configured driver
+
+### Driver Comparison
+
+| Feature | AutoMem | PGVector |
+|---------|---------|----------|
+| **Type** | External HTTP service | PostgreSQL extension |
+| **Setup** | Requires AutoMem server | Requires PostgreSQL + pgvector |
+| **Vector Search** | Built-in | pgvector extension |
+| **Scalability** | Horizontal (microservice) | Vertical (database) |
+| **Latency** | Network overhead | Direct database |
+| **Use Case** | Distributed systems | Monolithic applications |
+
+### PGVector Schema
+
+**Tables**:
+1. **memories**: User conversation history
+   - `user_id`, `conversation_id`, `content`, `tags`, `metadata`
+   - `embedding` (vector(384)): Sentence embeddings for semantic search
+   - Foreign keys to `users` and `conversations` tables
+
+2. **global_knowledge**: Company policies and documentation
+   - `content`, `category`, `title`, `doc_id`, `tags`, `metadata`
+   - `embedding` (vector(384)): Sentence embeddings for semantic search
+
+**Migrations**: Located in `database/migrations/versions/005_create_pgvector_tables.py`
+
+**Vector Indexes**: IVFFlat indexes for fast similarity search (created manually after data insertion)
+
+### API Interface
+
+**All drivers implement**:
+```python
+class BaseMemoryDriver(ABC):
+    def recall(user_id, conversation_id, query, top_k, use_vector) -> List[Dict]
+    def recall_global_knowledge(query, top_k, category) -> List[Dict]
+    def store(user_id, content, conversation_id, tags, metadata) -> Dict
+    def store_global_knowledge(content, category, title, doc_id, metadata) -> Dict
+    def delete(memory_id) -> bool
+```
+
+**Seamless Integration**: Agents call `get_memory_driver()` and use the same API regardless of backend
+
 ## Data Flow
 
 ### State Object Flow
 
 State progresses through the system as a TypedDict:
 
-1. **Initial**: Contains `user_input`, `user_id`, `conversation_id`, all outputs set to `None`
+1. **Initial**: Contains `user_input`, `user_id`, `conversation_id`, `executed_agents` (empty list), all outputs set to `None`
 2. **After Orchestrator**: Adds `intent` and `selected_agents` list
 3. **After Retrieval Agents** (parallel): Populates `knowledge_output` (company docs/policies) and `memory_output` (user history)
-4. **After Specialized Agents** (parallel): Populates respective output fields (`research_output`, `writing_output`, `code_output`, `general_output`)
+4. **After Specialized Agents** (parallel): Populates respective output fields (`research_output`, `writing_output`, `code_output`, `general_output`), appends agent name to `executed_agents`
 5. **After Aggregator**: Synthesizes all outputs into `final_output`
 
-**Key Properties**: `user_input`, `user_id`, `conversation_id`, `intent`, `selected_agents`, `knowledge_output`, `memory_output`, `research_output`, `writing_output`, `code_output`, `general_output`, `final_output`
+**Key Properties**: `user_input`, `user_id`, `conversation_id`, `intent`, `selected_agents`, `knowledge_output`, `memory_output`, `research_output`, `writing_output`, `code_output`, `general_output`, `final_output`, `executed_agents`
+
+**Infinite Loop Prevention**: The `executed_agents` field tracks which agents have run, preventing duplicate execution in routing logic
 
 ## Component Details
 
@@ -166,7 +236,8 @@ State progresses through the system as a TypedDict:
 
 **Key Characteristics**:
 - Type: **Retrieval-only** (no LLM, no generation)
-- Backend: AutoMem vector database
+- Backend: Configurable memory driver (AutoMem or PGVector)
+- Configuration: Set via `MEMORY_DRIVER` environment variable
 - Operation: Semantic search with top-k retrieval (k=5)
 - Output: Retrieved documents with metadata (category, doc_id, title)
 
@@ -184,7 +255,8 @@ State progresses through the system as a TypedDict:
 
 **Key Characteristics**:
 - Type: **Retrieval-only** (no LLM, no generation)
-- Backend: AutoMem vector database
+- Backend: Configurable memory driver (AutoMem or PGVector)
+- Configuration: Set via `MEMORY_DRIVER` environment variable
 - Operation: Three-tier retrieval strategy:
   - Recent chronological (last 5 messages)
   - Short-term semantic (current conversation)
@@ -235,7 +307,7 @@ State progresses through the system as a TypedDict:
 
 **Termination**: Aggregator produces final output and ends workflow
 
-**Memory Backend**: AutoMem (no LangGraph checkpointing) for persistent storage
+**Memory Backend**: Configurable via `MEMORY_DRIVER` (automem or pgvector) - uses driver abstraction, not LangGraph checkpointing
 
 ### Execution Flow Patterns
 

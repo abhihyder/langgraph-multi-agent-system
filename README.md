@@ -118,9 +118,30 @@ cp .env.example .env
 #   LANGCHAIN_TRACING_V2=true
 #   LANGCHAIN_API_KEY=your_langsmith_key_here
 #   LANGCHAIN_PROJECT=multi-agent-ai-system
+
+# Optional: Configure memory driver (default: automem)
+# Options: automem (external service) or pgvector (PostgreSQL)
+#   MEMORY_DRIVER=pgvector
+# If using pgvector, ensure PostgreSQL is configured:
+#   DB_HOST=localhost
+#   DB_PORT=5432
+#   DB_DATABASE=multiagent_ai
+#   DB_USERNAME=postgres
+#   DB_PASSWORD=your_password
 ```
 
-#### Step 2: Start Production API Server
+#### Step 2: Run Database Migrations (If Using PGVector)
+
+```bash
+# Run migrations to create tables (users, conversations, memories, etc.)
+python migrate.py upgrade
+
+# Or create all tables from scratch
+python migrate.py fresh
+# ⚠️  Warning: 'fresh' drops all existing tables and data!
+```
+
+#### Step 3: Start Production API Server
 
 ```bash
 # Start production server (with OAuth, Database, Rate Limiting)
@@ -143,7 +164,7 @@ API Documentation: **http://localhost:8000/docs**
 
 **Note:** Most endpoints require Google OAuth authentication. See server documentation for details.
 
-#### Step 3: Setup Frontend
+#### Step 4: Setup Frontend
 
 Open a **new terminal**:
 
@@ -160,7 +181,7 @@ npm run dev
 
 Frontend will be available at: **http://localhost:3000**
 
-#### Step 4: Start Chatting! 🎉
+#### Step 5: Start Chatting! 🎉
 
 Open your browser and go to **http://localhost:3000**
 
@@ -393,6 +414,20 @@ CODE_TEMPERATURE=0.2
 # Optional: System settings
 MAX_RETRIES=3
 TIMEOUT=120
+
+# Memory Driver Configuration (Laravel-style)
+MEMORY_DRIVER=automem  # Options: automem, pgvector
+
+# AutoMem Configuration (if using automem driver)
+AUTOMEM_URL=http://localhost:8001
+AUTOMEM_API_TOKEN=your-token  # Optional
+
+# PostgreSQL Configuration (if using pgvector driver)
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=multiagent_ai
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
 ```
 
 ## 📡 API Reference
