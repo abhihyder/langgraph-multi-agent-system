@@ -5,7 +5,7 @@ This is a retrieval agent (no LLM) that fetches relevant user-specific memories.
 
 from typing import Dict, Any, List
 from ..state import AgentState
-from ...services.automem_client import get_default_client
+from ...core.memory import get_memory_driver
 from ...utils.tracing import trace_agent
 
 
@@ -31,15 +31,21 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
     conversation_id = state.get("conversation_id")
     
     if not user_id:
-        return {"memory_output": None}
+        # Mark as executed even if no user_id
+        executed = state.get("executed_agents", [])
+        return {
+            "memory_output": None,
+            "executed_agents": executed + ["memory"]
+        }
     
-    automem = get_default_client()
+    # Get configured memory driver (seamless switching via env)
+    driver = get_memory_driver()
     
     try:
         # 1. Recent chronological messages (for conversational flow)
         recent_messages = []
         try:
-            recent_messages = automem.recall(
+            recent_messages = driver.recall(
                 user_id=user_id,
                 conversation_id=conversation_id,
                 query=None,
@@ -53,7 +59,7 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
         # 2. Short-term semantic (relevant to current conversation)
         short_term_memories = []
         try:
-            short_term_memories = automem.recall(
+            short_term_memories = driver.recall(
                 user_id=user_id,
                 conversation_id=conversation_id,
                 query=user_input,
@@ -76,7 +82,7 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
             # Use exclude_tags to filter out current conversation at API level
             exclude_tags = [f"conversation_{conversation_id}"] if conversation_id else None
             
-            long_term_memories = automem.recall(
+            long_term_memories = driver.recall(
                 user_id=user_id,
                 conversation_id=None,
                 query=user_input,
@@ -94,7 +100,11 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
         
         if not all_memories:
             print("[MEMORY AGENT] No memories found")
-            return {"memory_output": None}
+            executed = state.get("executed_agents", [])
+            return {
+                "memory_output": None,
+                "executed_agents": executed + ["memory"]
+            }
         
         # Format memories
         memory_parts = []
@@ -126,12 +136,16 @@ def memory_agent(state: AgentState) -> Dict[str, Any]:
         
         print(f"[MEMORY AGENT] Retrieved total: {len(all_memories)} memories")
         
+        executed = state.get("executed_agents", [])
         return {
-            "memory_output": memory_output
+            "memory_output": memory_output,
+            "executed_agents": executed + ["memory"]
         }
         
     except Exception as e:
         print(f"[MEMORY AGENT] Error retrieving memories: {e}")
+        executed = state.get("executed_agents", [])
         return {
-            "memory_output": None
+            "memory_output": None,
+            "executed_agents": executed + ["memory"]
         }

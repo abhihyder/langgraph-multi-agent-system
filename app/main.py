@@ -45,6 +45,7 @@ def run_agent_system(user_input: str, verbose: bool = False) -> str:
         "writing_output": None,
         "code_output": None,
         "selected_agents": [],
+        "executed_agents": [],
         "final_output": None
     }
     

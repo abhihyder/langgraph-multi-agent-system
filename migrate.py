@@ -48,8 +48,19 @@ def migrate_fresh():
         print("❌ Aborted.")
         return
     
-    # Drop all tables
+    # Drop all tables with CASCADE to handle foreign key dependencies
     print("\n🗑️  Dropping all tables...")
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            # Drop PGVector tables first (they have foreign keys)
+            conn.execute(text("DROP TABLE IF EXISTS memories CASCADE"))
+            conn.execute(text("DROP TABLE IF EXISTS global_knowledge CASCADE"))
+            conn.commit()
+    except Exception as e:
+        print(f"⚠️  Note: {e}")
+    
+    # Now drop all remaining tables
     Base.metadata.drop_all(bind=engine)
     print("✅ All tables dropped")
     

@@ -76,7 +76,9 @@ def code_agent(state: AgentState) -> Dict[str, Any]:
     # Get code response
     response = llm.invoke(messages)
     
-    # Update only code_output field
+    # Update only code_output field and mark as executed
+    executed = state.get("executed_agents", [])
     return {
-        "code_output": response.content
+        "code_output": response.content,
+        "executed_agents": executed + ["code"]
     }

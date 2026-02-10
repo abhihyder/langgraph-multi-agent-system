@@ -43,4 +43,5 @@ class AgentState(TypedDict):
     
     # Control fields
     selected_agents: List[str]
+    executed_agents: List[str]  # Track which agents have executed
     final_output: Optional[str]

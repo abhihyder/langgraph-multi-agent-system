@@ -71,7 +71,9 @@ def general_agent(state: AgentState) -> Dict[str, Any]:
     # Get response
     response = llm.invoke(llm_messages)
     
-    # Update only general_output field
+    # Update only general_output field and mark as executed
+    executed = state.get("executed_agents", [])
     return {
-        "general_output": response.content
+        "general_output": response.content,
+        "executed_agents": executed + ["general"]
     }

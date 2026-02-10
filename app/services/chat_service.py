@@ -4,7 +4,7 @@ Chat Service - Handles business logic for chat interactions with LangSmith traci
 
 from typing import Dict, Any, Optional, TYPE_CHECKING
 from ..agentic.state import AgentState
-from .automem_client import get_default_client
+from app.core.memory import get_memory_driver
 from ..utils.tracing import trace_service, trace_context, add_trace_metadata
 
 if TYPE_CHECKING:
@@ -41,7 +41,8 @@ class ChatService:
         Returns:
             Dict containing the response and metadata
         """
-        automem = get_default_client()
+        # Get configured memory driver (seamless switching via env)
+        memory_driver = get_memory_driver()
         
         # Add trace metadata for monitoring
         add_trace_metadata({
@@ -64,6 +65,7 @@ class ChatService:
             "writing_output": None,
             "code_output": None,
             "selected_agents": [],
+            "executed_agents": [],
             "final_output": None
         }
         
@@ -86,29 +88,29 @@ class ChatService:
             "response_length": len(result.get("final_output", ""))
         })
         
-        # Store user message and AI response in AutoMem
+        # Store user message and AI response using configured memory driver
         try:
-            automem.store_message(
+            memory_driver.store(
                 user_id=user_id,
-                conversation_id=conversation_id,
-                role="user",
                 content=user_input,
-                scope="conversation"
+                conversation_id=conversation_id,
+                tags=["user", f"conversation_{conversation_id}"] if conversation_id else ["user"],
+                metadata={"role": "user", "scope": "conversation"}
             )
         except Exception as e:
-            pass  # Silently handle AutoMem errors
+            pass  # Silently handle memory storage errors
 
         ai_response = result.get("final_output") or ""
         try:
-            automem.store_message(
+            memory_driver.store(
                 user_id=user_id,
-                conversation_id=conversation_id,
-                role="assistant",
                 content=ai_response,
-                scope="conversation"
+                conversation_id=conversation_id,
+                tags=["assistant", f"conversation_{conversation_id}"] if conversation_id else ["assistant"],
+                metadata={"role": "assistant", "scope": "conversation"}
             )
         except Exception as e:
-            pass  # Silently handle AutoMem errors
+            pass  # Silently handle memory storage errors
         
         return {
             "response": result.get("final_output", "No response generated"),
