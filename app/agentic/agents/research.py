@@ -65,7 +65,9 @@ def research_agent(state: AgentState) -> Dict[str, Any]:
     # Get research response
     response = llm.invoke(messages)
     
-    # Update only research_output field
+    # Update only research_output field and mark as executed
+    executed = state.get("executed_agents", [])
     return {
-        "research_output": response.content
+        "research_output": response.content,
+        "executed_agents": executed + ["research"]
     }

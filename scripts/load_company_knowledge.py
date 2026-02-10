@@ -14,7 +14,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.services.automem_client import get_default_client
+from app.core.automem_client import get_default_client
 
 
 def load_hr_policies():

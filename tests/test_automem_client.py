@@ -5,7 +5,7 @@ Testing memory storage, recall, and association functionality
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from app.services.automem_client import AutoMemClient, get_default_client
+from app.core.automem_client import AutoMemClient, get_default_client
 
 
 @pytest.mark.unit
@@ -33,24 +33,22 @@ class TestAutoMemClient:
         assert client.api_token == "test_token"
         assert client.timeout == 20
     
-    def test_headers_without_token(self):
+    @patch('app.core.automem_client.get_settings')
+    def test_headers_without_token(self, mock_get_settings):
         """Test headers generation without API token"""
-        # Ensure no token in environment
-        import os
-        old_token = os.environ.get('AUTOMEM_API_TOKEN')
-        if 'AUTOMEM_API_TOKEN' in os.environ:
-            del os.environ['AUTOMEM_API_TOKEN']
+        # Mock settings to return None for API token
+        mock_settings = Mock()
+        mock_settings.AUTOMEM_URL = "http://localhost:8001"
+        mock_settings.AUTOMEM_API_TOKEN = None
+        mock_settings.AUTOMEM_TIMEOUT = 10
+        mock_get_settings.return_value = mock_settings
         
-        try:
-            client = AutoMemClient(api_token=None)
-            headers = client._headers()
-            
-            assert headers["Content-Type"] == "application/json"
-            # Should not have Authorization header when no token
-            assert "Authorization" not in headers
-        finally:
-            if old_token:
-                os.environ['AUTOMEM_API_TOKEN'] = old_token
+        client = AutoMemClient()
+        headers = client._headers()
+        
+        assert headers["Content-Type"] == "application/json"
+        # Should not have Authorization header when no token in settings
+        assert "Authorization" not in headers
     
     def test_headers_with_token(self):
         """Test headers generation with API token"""
@@ -290,9 +288,16 @@ class TestAutoMemClient:
         
         assert result is False
     
-    @patch.dict('os.environ', {'AUTOMEM_URL': 'http://custom:9000', 'AUTOMEM_API_TOKEN': 'env_token'})
-    def test_get_default_client_from_env(self):
-        """Test getting default client uses environment variables"""
+    @patch('app.core.automem_client.get_settings')
+    def test_get_default_client_from_env(self, mock_get_settings):
+        """Test getting default client uses settings from configuration"""
+        # Mock settings to return custom values
+        mock_settings = Mock()
+        mock_settings.AUTOMEM_URL = "http://custom:9000"
+        mock_settings.AUTOMEM_API_TOKEN = "env_token"
+        mock_settings.AUTOMEM_TIMEOUT = 10
+        mock_get_settings.return_value = mock_settings
+        
         client = get_default_client()
         
         assert client.base_url == "http://custom:9000"

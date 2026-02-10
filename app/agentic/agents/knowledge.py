@@ -5,7 +5,7 @@ This is a retrieval agent (no LLM) that fetches relevant company policies and do
 
 from typing import Dict, Any
 from ..state import AgentState
-from ...services.automem_client import get_default_client
+from ...core.memory import get_memory_driver
 from ...utils.tracing import trace_agent
 
 
@@ -23,20 +23,23 @@ def knowledge_agent(state: AgentState) -> Dict[str, Any]:
     """
     user_input = state["user_input"]
     
-    automem = get_default_client()
+    # Get configured memory driver (seamless switching via env)
+    driver = get_memory_driver()
     
     try:
         # Semantic search across global knowledge base
-        # AutoMem's vector search handles multi-topic queries automatically
-        documents = automem.recall_global_knowledge(
+        # Driver handles vector search automatically
+        documents = driver.recall_global_knowledge(
             query=user_input,
             top_k=5  # Get top 5 most relevant company docs
         )
         
         if not documents:
             print("[KNOWLEDGE AGENT] No relevant company knowledge found")
+            executed = state.get("executed_agents", [])
             return {
-                "knowledge_output": None
+                "knowledge_output": None,
+                "executed_agents": executed + ["knowledge"]
             }
         
         # Format retrieved documents
@@ -72,12 +75,16 @@ def knowledge_agent(state: AgentState) -> Dict[str, Any]:
         
         print(f"[KNOWLEDGE AGENT] Retrieved {len(documents)} documents from categories: {', '.join(categories_found)}")
         
+        executed = state.get("executed_agents", [])
         return {
-            "knowledge_output": knowledge_output
+            "knowledge_output": knowledge_output,
+            "executed_agents": executed + ["knowledge"]
         }
         
     except Exception as e:
         print(f"[KNOWLEDGE AGENT] Error retrieving knowledge: {e}")
+        executed = state.get("executed_agents", [])
         return {
-            "knowledge_output": None
+            "knowledge_output": None,
+            "executed_agents": executed + ["knowledge"]
         }

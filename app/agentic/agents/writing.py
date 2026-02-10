@@ -77,7 +77,9 @@ def writing_agent(state: AgentState) -> Dict[str, Any]:
     # Get writing response
     response = llm.invoke(messages)
     
-    # Update only writing_output field
+    # Update only writing_output field and mark as executed
+    executed = state.get("executed_agents", [])
     return {
-        "writing_output": response.content
+        "writing_output": response.content,
+        "executed_agents": executed + ["writing"]
     }

@@ -1,7 +1,7 @@
-import os
 import time
 from typing import Any, Dict, List, Optional
 import httpx
+from config.settings import get_settings
 
 
 class AutoMemClient:
@@ -12,15 +12,17 @@ class AutoMemClient:
       - POST /memory
       - POST /associate
 
-    Environment:
+    Configuration:
       AUTOMEM_URL (default: http://localhost:8001)
       AUTOMEM_API_TOKEN (optional)
+      AUTOMEM_TIMEOUT (default: 10)
     """
 
-    def __init__(self, base_url: Optional[str] = None, api_token: Optional[str] = None, timeout: int = 10):
-        self.base_url = base_url or os.getenv("AUTOMEM_URL", "http://localhost:8001")
-        self.api_token = api_token or os.getenv("AUTOMEM_API_TOKEN")
-        self.timeout = timeout
+    def __init__(self, base_url: Optional[str] = None, api_token: Optional[str] = None, timeout: Optional[int] = None):
+        settings = get_settings()
+        self.base_url = base_url or settings.AUTOMEM_URL
+        self.api_token = api_token or settings.AUTOMEM_API_TOKEN
+        self.timeout = timeout or settings.AUTOMEM_TIMEOUT
         self.client = httpx.Client(timeout=self.timeout)
 
     def _headers(self) -> Dict[str, str]:

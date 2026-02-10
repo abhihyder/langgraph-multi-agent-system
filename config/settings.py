@@ -75,6 +75,15 @@ class Settings:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     VERBOSE: bool = os.getenv("VERBOSE", "false").lower() == "true"
     
+    # Memory Driver Configuration (Laravel-style database driver pattern)
+    # Supported drivers: automem, pgvector
+    MEMORY_DRIVER: str = os.getenv("MEMORY_DRIVER", "automem").lower()
+    
+    # AutoMem Configuration
+    AUTOMEM_URL: str = os.getenv("AUTOMEM_URL", "http://localhost:8001")
+    AUTOMEM_API_TOKEN: Optional[str] = os.getenv("AUTOMEM_API_TOKEN")
+    AUTOMEM_TIMEOUT: int = int(os.getenv("AUTOMEM_TIMEOUT", "10"))
+    
     # LangSmith Configuration for Tracing and Monitoring
     LANGCHAIN_TRACING_V2: bool = os.getenv("LANGCHAIN_TRACING_V2", "true").lower() == "true"
     LANGCHAIN_API_KEY: Optional[str] = os.getenv("LANGCHAIN_API_KEY")

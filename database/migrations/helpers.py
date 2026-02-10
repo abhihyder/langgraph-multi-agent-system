@@ -127,6 +127,30 @@ def jsonb(name: str, default: Any = None):
                     nullable=True, server_default=server_default)
 
 
+def array_text(name: str, nullable: bool = True, server_default: str = '{}'):
+    """
+    Create a PostgreSQL ARRAY(TEXT) column.
+    
+    Args:
+        name: Column name
+        nullable: Whether the column can be NULL
+        server_default: Default value (default: '{}' for empty array)
+    """
+    return sa.Column(name, postgresql.ARRAY(sa.Text()), nullable=nullable, server_default=server_default)
+
+
+def array_float(name: str, nullable: bool = True, server_default: Optional[str] = None):
+    """
+    Create a PostgreSQL ARRAY(FLOAT) column for vector embeddings.
+    
+    Args:
+        name: Column name (commonly 'embedding')
+        nullable: Whether the column can be NULL
+        server_default: Default value (default: None)
+    """
+    return sa.Column(name, postgresql.ARRAY(sa.Float()), nullable=nullable, server_default=server_default)
+
+
 def add_foreign_key(
     table_name: str,
     column_name: str,

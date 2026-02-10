@@ -62,20 +62,8 @@ def route_from_agent(state: AgentState) -> str:
     """
     selected = state.get("selected_agents", [])
     
-    # Get list of agents that have already executed (have output)
-    executed = set()
-    if state.get("knowledge_output") is not None:
-        executed.add("knowledge")
-    if state.get("memory_output") is not None:
-        executed.add("memory")
-    if state.get("general_output") is not None:
-        executed.add("general")
-    if state.get("research_output") is not None:
-        executed.add("research")
-    if state.get("writing_output") is not None:
-        executed.add("writing")
-    if state.get("code_output") is not None:
-        executed.add("code")
+    # Get list of agents that have already executed from state tracking
+    executed = set(state.get("executed_agents", []))
     
     # Find next agent to execute (in priority order)
     # Retrieval agents first
