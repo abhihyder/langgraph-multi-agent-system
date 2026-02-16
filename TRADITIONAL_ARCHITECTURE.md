@@ -1,19 +1,30 @@
 # Traditional Architecture Guide (Non-Agentic Features)
 
 > **Scope**: Standard web features using layered architecture (CRUD, business logic, integrations)
+> **Integration**: Works with API Gateway for security, rate limiting, and request processing
 
-**Flow**: `Client → Route → Controller → Service → Model/3rd Party → Response`
+**Flow**: `Client → API Gateway → Route → Controller → Service → Model/3rd Party → Response`
+
+**See [ARCHITECTURE.md](ARCHITECTURE.md) for complete system architecture.**
 
 ---
 
 ## Layered Architecture Pattern
 
+**Complete Flow**:
+```
+Client → API Gateway → Route → Controller → Service → Model/Integration → Response
+         ↓              ↓         ↓            ↓          ↓
+      Security       Routing  Validation    Logic    Data/APIs
+```
+
 **Layers**:
-1. **Route Layer** (`app/routes/`): HTTP endpoint definitions
-2. **Controller Layer** (`app/controllers/`): Request/response handling, validation
-3. **Service Layer** (`app/services/`): Business logic, orchestration
-4. **Model Layer** (`app/models/`): Database models, schemas
-5. **External Layer**: 3rd party APIs, external services
+1. **Gateway Layer** (`app/gateway/`): Authentication, rate limiting, request validation, metrics
+2. **Route Layer** (`app/routes/`): HTTP endpoint definitions
+3. **Controller Layer** (`app/controllers/`): Request/response handling, input validation
+4. **Service Layer** (`app/services/`): Business logic, orchestration, external service calls
+5. **Model Layer** (`app/models/`): Database models, schemas
+6. **Integration Layer** (`app/integrations/`): Third-party service wrappers (Gmail, etc.)
 
 ---
 
@@ -223,26 +234,39 @@ class PaymentController:
 
 ```
 app/
-│── routes/
-│   ├── user_routes.py       # User endpoints
-│   ├── order_routes.py      # Order endpoints
-│   └── payment_routes.py    # Payment endpoints
-├── controllers/
-│   ├── user_controller.py       # User request handling
-│   ├── order_controller.py
-│   └── payment_controller.py
-├── services/
-│   ├── user_service.py          # User business logic
-│   ├── order_service.py
-│   ├── payment_service.py
-│   └── notification_service.py
-├── models/
-│   ├── user.py                  # User database model
-│   ├── order.py
-│   └── payment.py
-└── schemas/
-    ├── user_schema.py           # Pydantic schemas
-    └── order_schema.py
+├── gateway/                     # API Gateway (Phase 1.1)
+│   ├── gateway.py               # Main gateway
+│   ├── middleware.py            # Auth, logging, metrics
+│   ├── rate_limiter.py          # Rate limiting
+│   └── handlers/                # Request handlers
+├── routes/                      # HTTP endpoints
+│   ├── api.py                   # Main API routes
+│   ├── auth.py                  # Auth routes
+│   ├── email.py                 # Email routes
+│   └── voice.py                 # Voice routes
+├── controllers/                 # Request handlers
+│   ├── auth_controller.py
+│   ├── conversation_controller.py
+│   ├── query_controller.py
+│   └── user_controller.py
+├── services/                    # Business logic
+│   ├── auth_service.py
+│   ├── chat_service.py
+│   ├── conversation_service.py
+│   └── voice/
+│       ├── stt_service.py
+│       └── tts_service.py
+├── integrations/                # Third-party services
+│   ├── base_integration.py
+│   └── email/
+│       ├── gmail_service.py
+│       └── email_composer.py
+├── models/                      # Database models
+│   ├── user.py
+│   ├── conversation.py
+│   └── message.py
+├── requests/                    # Pydantic request schemas
+└── responses/                   # Pydantic response schemas
 ```
 
 ---
@@ -327,4 +351,7 @@ def test_create_user_endpoint(client):
 
 ---
 
-**Related**: See [CONSTITUTION.md](CONSTITUTION.md) for universal principles and [AGENTIC_ARCHITECTURE.md](AGENTIC_ARCHITECTURE.md) for AI features.
+**Related**: 
+- [CONSTITUTION.md](CONSTITUTION.md) - Universal principles and decision framework
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Complete system architecture
+- [FEATURES.md](FEATURES.md) - Feature list and roadmap

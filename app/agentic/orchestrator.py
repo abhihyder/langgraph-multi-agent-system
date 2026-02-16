@@ -11,7 +11,7 @@ import json
 from typing import Dict, Any
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from .state import AgentState
+from .states import AgentState
 from ..utils.helpers import load_prompt
 from ..utils.llm_factory import get_llm
 from ..utils.tracing import trace_agent

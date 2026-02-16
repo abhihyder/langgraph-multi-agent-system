@@ -22,7 +22,9 @@ from dotenv import load_dotenv
 
 from config.settings import get_settings
 from database import init_db
-from app.routes import auth_router, api_router
+from app.routes import auth_router, api_router, oauth_router, email_router
+from app.gateway import APIGateway
+from app.handlers import SingleChatHandler, VoiceHandler, ThirdPartyHandler
 
 # Load environment variables
 load_dotenv()
@@ -52,8 +54,33 @@ async def lifespan(app: FastAPI):
         # Initialize database
         init_db()
         logger.info("Database initialized successfully")
+        
+        # Initialize Gateway
+        gateway = APIGateway()
+        
+        # Initialize Handlers
+        singlechat_handler = SingleChatHandler()
+        voice_handler = VoiceHandler()
+        third_party_handler = ThirdPartyHandler()
+        
+        # Store in app state for endpoint access
+        app.state.gateway = gateway
+        app.state.handlers = {
+            "singlechat": singlechat_handler,
+            "voice": voice_handler,
+            "third_party": third_party_handler,
+        }
+        
+        logger.info("API Gateway initialized")
+        logger.info("Handler routing configured:")
+        logger.info("  - /api/chat/*   → SingleChatHandler")
+        logger.info("  - /api/voice/*  → VoiceHandler")
+        logger.info("  - /api/email/*  → ThirdPartyHandler")
+        logger.info("  - /api/sms/*    → ThirdPartyHandler")
+        logger.info("  - /api/drive/*  → ThirdPartyHandler")
+        
     except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
+        logger.error(f"Failed to initialize application: {e}")
         raise
     
     yield
@@ -143,11 +170,96 @@ async def log_requests(request: Request, call_next):
 # Routers
 # ============================================================================
 
-# Include authentication routes
+# Include authentication routes (bypass gateway)
 app.include_router(auth_router)
 
-# Include API routes
+# Include OAuth routes for third-party service authentication
+app.include_router(oauth_router)
+
+# Include email routes (direct access)
+app.include_router(email_router)
+
+# Include API routes (bypass gateway for now - will be deprecated)
 app.include_router(api_router)
+
+
+# ============================================================================
+# Gateway Integration
+# ============================================================================
+
+@app.api_route(
+    "/api/chat/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    tags=["gateway"],
+    summary="Chat endpoints via Gateway"
+)
+async def gateway_chat(request: Request, path: str):
+    """Route chat requests through API Gateway to SingleChatHandler."""
+    handler_type = request.app.state.gateway.get_handler_type(request.url.path)
+    handler = request.app.state.handlers.get(handler_type)
+    if handler:
+        return await handler.handle(request)
+    return {"error": "Handler not found"}
+
+
+@app.api_route(
+    "/api/voice/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    tags=["gateway"],
+    summary="Voice endpoints via Gateway"
+)
+async def gateway_voice(request: Request, path: str):
+    """Route voice requests through API Gateway to VoiceHandler."""
+    handler_type = request.app.state.gateway.get_handler_type(request.url.path)
+    handler = request.app.state.handlers.get(handler_type)
+    if handler:
+        return await handler.handle(request)
+    return {"error": "Handler not found"}
+
+
+@app.api_route(
+    "/api/email/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    tags=["gateway"],
+    summary="Email endpoints via Gateway"
+)
+async def gateway_email(request: Request, path: str):
+    """Route email requests through API Gateway to ThirdPartyHandler."""
+    handler_type = request.app.state.gateway.get_handler_type(request.url.path)
+    handler = request.app.state.handlers.get(handler_type)
+    if handler:
+        return await handler.handle(request)
+    return {"error": "Handler not found"}
+
+
+@app.api_route(
+    "/api/sms/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    tags=["gateway"],
+    summary="SMS endpoints via Gateway"
+)
+async def gateway_sms(request: Request, path: str):
+    """Route SMS requests through API Gateway to ThirdPartyHandler."""
+    handler_type = request.app.state.gateway.get_handler_type(request.url.path)
+    handler = request.app.state.handlers.get(handler_type)
+    if handler:
+        return await handler.handle(request)
+    return {"error": "Handler not found"}
+
+
+@app.api_route(
+    "/api/drive/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    tags=["gateway"],
+    summary="Drive endpoints via Gateway"
+)
+async def gateway_drive(request: Request, path: str):
+    """Route drive requests through API Gateway to ThirdPartyHandler."""
+    handler_type = request.app.state.gateway.get_handler_type(request.url.path)
+    handler = request.app.state.handlers.get(handler_type)
+    if handler:
+        return await handler.handle(request)
+    return {"error": "Handler not found"}
 
 
 # ============================================================================

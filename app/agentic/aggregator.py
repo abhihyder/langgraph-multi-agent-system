@@ -11,7 +11,7 @@ The aggregator:
 from typing import Dict, Any
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from .state import AgentState
+from .states import AgentState
 from ..utils.llm_factory import get_llm
 from ..utils.tracing import trace_agent
 from config.llm_config import get_llm_config

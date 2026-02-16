@@ -11,16 +11,16 @@
 This application uses **two distinct architectural patterns**:
 
 ### 1. Agentic Architecture (AI Features)
-**Flow**: `Request → Orchestrator → [Agents] → Aggregator → Response`  
+**Flow**: `Request → Orchestrator → [Agent Graphs] → Aggregator → Response`  
 **Use for**: AI chat, query assistant, multi-agent orchestration  
-**Key**: LangGraph, multiple specialized agents, context aggregation  
-**📖 Details**: See [AGENTIC_ARCHITECTURE.md](AGENTIC_ARCHITECTURE.md)
+**Key**: LangGraph StateGraph, specialized agent graphs, context aggregation  
+**📖 Details**: See [ARCHITECTURE.md](ARCHITECTURE.md#agent-architecture)
 
 ### 2. Traditional Architecture (Standard Features)  
-**Flow**: `Request → Route → Controller → Service → Model/3rd Party → Response`  
+**Flow**: `Request → Gateway → Route → Controller → Service → Model/3rd Party → Response`  
 **Use for**: CRUD operations, business logic, integrations, standard APIs  
-**Key**: Layered architecture, separation of concerns, reusable services  
-**📖 Details**: See [TRADITIONAL_ARCHITECTURE.md](TRADITIONAL_ARCHITECTURE.md)
+**Key**: Layered architecture, API Gateway, separation of concerns, reusable services  
+**📖 Details**: See [ARCHITECTURE.md](ARCHITECTURE.md#data-flow)
 
 ---
 
@@ -31,12 +31,12 @@ New Feature Request?
   ↓
 Is it AI-powered with multi-agent needs?
   ├─ YES → Use Agentic Architecture
-  │         └─ Orchestrator → Agents → Aggregator
-  │         └─ Read: AGENTIC_ARCHITECTURE.md
+  │         └─ Orchestrator → Agent Graphs → Aggregator
+  │         └─ Read: ARCHITECTURE.md (Agent Architecture)
   │
   └─ NO → Use Traditional Architecture
-            └─ Route → Controller → Service → Model
-            └─ Read: TRADITIONAL_ARCHITECTURE.md
+            └─ Gateway → Route → Controller → Service → Model
+            └─ Read: ARCHITECTURE.md (Data Flow)
 ```
 
 **Decision Criteria**:
@@ -102,8 +102,11 @@ logger.info("User created", extra={
 ## Documentation Index
 
 **For detailed implementation guides**:
-- **AI Features**: Read [AGENTIC_ARCHITECTURE.md](AGENTIC_ARCHITECTURE.md) for orchestrator, agents, state management
-- **Standard Features**: Read [TRADITIONAL_ARCHITECTURE.md](TRADITIONAL_ARCHITECTURE.md) for routes, controllers, services, models
+- **Complete System**: Read [ARCHITECTURE.md](ARCHITECTURE.md) - Comprehensive architecture documentation
+- **AI Features**: See [ARCHITECTURE.md](ARCHITECTURE.md#agent-architecture) - LangGraph agents, state management, orchestration
+- **Standard Features**: See [ARCHITECTURE.md](ARCHITECTURE.md#data-flow) - Routes, controllers, services, models
+- **Implemented Features**: See [FEATURES.md](FEATURES.md) - Feature list and roadmap
+- **Memory System**: See [docs/MEMORY_DRIVER_SYSTEM.md](docs/MEMORY_DRIVER_SYSTEM.md) - Memory drivers
 
 **This file (CONSTITUTION.md)**: Universal principles, decision framework, when to use which architecture
 

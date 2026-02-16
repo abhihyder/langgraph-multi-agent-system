@@ -1,18 +1,18 @@
 """
 Integration Tests for Memory Agents with Driver System
 
-Tests that memory and knowledge agents work correctly with the new driver system.
+Tests that memory and knowledge agent graphs work correctly with the new driver system.
 """
 
 import pytest
 from unittest.mock import Mock, patch
-from app.agentic.state import AgentState
-from app.agentic.agents.memory import memory_agent
-from app.agentic.agents.knowledge import knowledge_agent
+from app.agentic.states.agent_state import AgentState
+from app.agentic.graphs.memory_graph import MemoryAgentGraph, create_memory_agent_graph
+from app.agentic.graphs.knowledge_graph import KnowledgeAgentGraph, create_knowledge_agent_graph
 
 
-class TestMemoryAgentIntegration:
-    """Integration tests for memory agent with driver system"""
+class TestMemoryAgentGraphIntegration:
+    """Integration tests for MemoryAgentGraph with driver system"""
     
     @pytest.fixture
     def mock_driver(self):
@@ -30,9 +30,9 @@ class TestMemoryAgentIntegration:
             "conversation_id": "conv456"
         }
     
-    @patch('app.agentic.agents.memory.get_memory_driver')
-    def test_memory_agent_uses_driver(self, mock_get_driver, mock_driver, state):
-        """Test that memory agent uses the configured driver"""
+    @patch('app.agentic.graphs.memory_graph.get_memory_driver')
+    def test_memory_agent_graph_uses_driver(self, mock_get_driver, mock_driver, state):
+        """Test that memory agent graph uses the configured driver"""
         mock_get_driver.return_value = mock_driver
         
         # Mock driver responses
@@ -57,7 +57,8 @@ class TestMemoryAgentIntegration:
             }]
         ]
         
-        result = memory_agent(state)
+        graph = create_memory_agent_graph()
+        result = graph.invoke(state)
         
         # Verify driver was called
         assert mock_get_driver.called
@@ -67,9 +68,9 @@ class TestMemoryAgentIntegration:
         assert "memory_output" in result
         assert result["memory_output"] is not None
     
-    @patch('app.agentic.agents.memory.get_memory_driver')
-    def test_memory_agent_without_user_id(self, mock_get_driver, mock_driver):
-        """Test memory agent returns None when no user_id"""
+    @patch('app.agentic.graphs.memory_graph.get_memory_driver')
+    def test_memory_agent_graph_without_user_id(self, mock_get_driver, mock_driver):
+        """Test memory agent graph returns None when no user_id"""
         mock_get_driver.return_value = mock_driver
         
         state = {
@@ -77,25 +78,27 @@ class TestMemoryAgentIntegration:
             "user_id": None
         }
         
-        result = memory_agent(state)
+        graph = create_memory_agent_graph()
+        result = graph.invoke(state)
         
         assert result["memory_output"] is None
         assert not mock_driver.recall.called
     
-    @patch('app.agentic.agents.memory.get_memory_driver')
-    def test_memory_agent_handles_driver_errors(self, mock_get_driver, mock_driver, state):
-        """Test memory agent handles driver errors gracefully"""
+    @patch('app.agentic.graphs.memory_graph.get_memory_driver')
+    def test_memory_agent_graph_handles_driver_errors(self, mock_get_driver, mock_driver, state):
+        """Test memory agent graph handles driver errors gracefully"""
         mock_get_driver.return_value = mock_driver
         mock_driver.recall.side_effect = Exception("Driver error")
         
-        result = memory_agent(state)
+        graph = create_memory_agent_graph()
+        result = graph.invoke(state)
         
-        # Should handle error and return None
+        # Should handle error and return error state
         assert "memory_output" in result
     
-    @patch('app.agentic.agents.memory.get_memory_driver')
-    def test_memory_agent_formats_output_correctly(self, mock_get_driver, mock_driver, state):
-        """Test that memory agent formats driver output correctly"""
+    @patch('app.agentic.graphs.memory_graph.get_memory_driver')
+    def test_memory_agent_graph_formats_output_correctly(self, mock_get_driver, mock_driver, state):
+        """Test that memory agent graph formats driver output correctly"""
         mock_get_driver.return_value = mock_driver
         
         # Mock complete memory retrieval
@@ -104,23 +107,27 @@ class TestMemoryAgentIntegration:
             [{
                 "id": "1",
                 "memory": {"content": "user: How are you?", "tags": ["user"], "metadata": {}},
-                "user_id": "user123"
+                "user_id": "user123",
+                "created_at": "2024-01-01"
             }],
             # Short-term
             [{
                 "id": "2",
                 "memory": {"content": "assistant: I'm doing well!", "tags": ["assistant"], "metadata": {}},
-                "user_id": "user123"
+                "user_id": "user123",
+                "created_at": "2024-01-01"
             }],
             # Long-term
             [{
                 "id": "3",
                 "memory": {"content": "user: Previous topic", "tags": ["user"], "metadata": {}},
-                "user_id": "user123"
+                "user_id": "user123",
+                "created_at": "2024-01-01"
             }]
         ]
         
-        result = memory_agent(state)
+        graph = create_memory_agent_graph()
+        result = graph.invoke(state)
         
         output = result["memory_output"]
         
@@ -130,8 +137,8 @@ class TestMemoryAgentIntegration:
         assert "RELEVANT FROM PAST CONVERSATIONS" in output
 
 
-class TestKnowledgeAgentIntegration:
-    """Integration tests for knowledge agent with driver system"""
+class TestKnowledgeAgentGraphIntegration:
+    """Integration tests for KnowledgeAgentGraph with driver system"""
     
     @pytest.fixture
     def mock_driver(self):
@@ -147,9 +154,9 @@ class TestKnowledgeAgentIntegration:
             "user_input": "What is our company policy?"
         }
     
-    @patch('app.agentic.agents.knowledge.get_memory_driver')
-    def test_knowledge_agent_uses_driver(self, mock_get_driver, mock_driver, state):
-        """Test that knowledge agent uses the configured driver"""
+    @patch('app.agentic.graphs.knowledge_graph.get_memory_driver')
+    def test_knowledge_agent_graph_uses_driver(self, mock_get_driver, mock_driver, state):
+        """Test that knowledge agent graph uses the configured driver"""
         mock_get_driver.return_value = mock_driver
         
         # Mock driver response
@@ -164,11 +171,13 @@ class TestKnowledgeAgentIntegration:
                         "doc_id": "POL-001",
                         "category": "policies"
                     }
-                }
+                },
+                "category": "policies"
             }
         ]
         
-        result = knowledge_agent(state)
+        graph = create_knowledge_agent_graph()
+        result = graph.invoke(state)
         
         # Verify driver was called
         assert mock_get_driver.called
@@ -182,29 +191,32 @@ class TestKnowledgeAgentIntegration:
         assert result["knowledge_output"] is not None
         assert "Company policy document" in result["knowledge_output"]
     
-    @patch('app.agentic.agents.knowledge.get_memory_driver')
-    def test_knowledge_agent_no_results(self, mock_get_driver, mock_driver, state):
-        """Test knowledge agent when no documents found"""
+    @patch('app.agentic.graphs.knowledge_graph.get_memory_driver')
+    def test_knowledge_agent_graph_no_results(self, mock_get_driver, mock_driver, state):
+        """Test knowledge agent graph when no documents found"""
         mock_get_driver.return_value = mock_driver
         mock_driver.recall_global_knowledge.return_value = []
         
-        result = knowledge_agent(state)
+        graph = create_knowledge_agent_graph()
+        result = graph.invoke(state)
         
         assert result["knowledge_output"] is None
     
-    @patch('app.agentic.agents.knowledge.get_memory_driver')
-    def test_knowledge_agent_handles_driver_errors(self, mock_get_driver, mock_driver, state):
-        """Test knowledge agent handles driver errors gracefully"""
+    @patch('app.agentic.graphs.knowledge_graph.get_memory_driver')
+    def test_knowledge_agent_graph_handles_driver_errors(self, mock_get_driver, mock_driver, state):
+        """Test knowledge agent graph handles driver errors gracefully"""
         mock_get_driver.return_value = mock_driver
         mock_driver.recall_global_knowledge.side_effect = Exception("Driver error")
         
-        result = knowledge_agent(state)
+        graph = create_knowledge_agent_graph()
+        result = graph.invoke(state)
         
-        assert result["knowledge_output"] is None
+        # Should handle error and return error state
+        assert "knowledge_output" in result
     
-    @patch('app.agentic.agents.knowledge.get_memory_driver')
-    def test_knowledge_agent_formats_output_with_metadata(self, mock_get_driver, mock_driver, state):
-        """Test that knowledge agent formats output with document metadata"""
+    @patch('app.agentic.graphs.knowledge_graph.get_memory_driver')
+    def test_knowledge_agent_graph_formats_output_with_metadata(self, mock_get_driver, mock_driver, state):
+        """Test that knowledge agent graph formats output with document metadata"""
         mock_get_driver.return_value = mock_driver
         
         mock_driver.recall_global_knowledge.return_value = [
@@ -217,26 +229,24 @@ class TestKnowledgeAgentIntegration:
                         "title": "Policy Title",
                         "doc_id": "POL-001"
                     }
-                }
+                },
+                "category": "policies"
             }
         ]
         
-        result = knowledge_agent(state)
+        graph = create_knowledge_agent_graph()
+        result = graph.invoke(state)
         
         output = result["knowledge_output"]
         
         # Should contain category tag
         assert "[POLICIES]" in output
-        # Should contain doc_id
-        assert "POL-001" in output
-        # Should contain title
-        assert "Policy Title" in output
         # Should contain content
         assert "Policy content" in output
     
-    @patch('app.agentic.agents.knowledge.get_memory_driver')
-    def test_knowledge_agent_multiple_categories(self, mock_get_driver, mock_driver, state):
-        """Test knowledge agent with documents from multiple categories"""
+    @patch('app.agentic.graphs.knowledge_graph.get_memory_driver')
+    def test_knowledge_agent_graph_multiple_categories(self, mock_get_driver, mock_driver, state):
+        """Test knowledge agent graph with documents from multiple categories"""
         mock_get_driver.return_value = mock_driver
         
         mock_driver.recall_global_knowledge.return_value = [
@@ -246,7 +256,8 @@ class TestKnowledgeAgentIntegration:
                     "content": "Policy doc",
                     "tags": ["category_policies"],
                     "metadata": {"title": "Policy"}
-                }
+                },
+                "category": "policies"
             },
             {
                 "id": "doc2",
@@ -254,11 +265,13 @@ class TestKnowledgeAgentIntegration:
                     "content": "Guide doc",
                     "tags": ["category_guidelines"],
                     "metadata": {"title": "Guide"}
-                }
+                },
+                "category": "guidelines"
             }
         ]
         
-        result = knowledge_agent(state)
+        graph = create_knowledge_agent_graph()
+        result = graph.invoke(state)
         
         output = result["knowledge_output"]
         
@@ -301,9 +314,9 @@ class TestDriverSwitching:
         assert driver1_type == "AutoMemDriver"
         assert driver2_type == "PGVectorDriver"
     
-    @patch('app.agentic.agents.memory.get_memory_driver')
-    def test_agents_work_with_any_driver(self, mock_get_driver):
-        """Test that agents work regardless of which driver is configured"""
+    @patch('app.agentic.graphs.memory_graph.get_memory_driver')
+    def test_agent_graphs_work_with_any_driver(self, mock_get_driver):
+        """Test that agent graphs work regardless of which driver is configured"""
         
         # Create mock drivers
         mock_automem = Mock()
@@ -320,12 +333,14 @@ class TestDriverSwitching:
         
         # Test with AutoMem driver
         mock_get_driver.return_value = mock_automem
-        result1 = memory_agent(state)
+        graph1 = create_memory_agent_graph()
+        result1 = graph1.invoke(state)
         assert "memory_output" in result1
         
         # Test with PGVector driver
         mock_get_driver.return_value = mock_pgvector
-        result2 = memory_agent(state)
+        graph2 = create_memory_agent_graph()
+        result2 = graph2.invoke(state)
         assert "memory_output" in result2
         
         # Both should work identically

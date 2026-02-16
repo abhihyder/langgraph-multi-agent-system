@@ -3,7 +3,7 @@ Chat Service - Handles business logic for chat interactions with LangSmith traci
 """
 
 from typing import Dict, Any, Optional, TYPE_CHECKING
-from ..agentic.state import AgentState
+from ..agentic.states.agent_state import AgentState
 from app.core.memory import get_memory_driver
 from ..utils.tracing import trace_service, trace_context, add_trace_metadata
 

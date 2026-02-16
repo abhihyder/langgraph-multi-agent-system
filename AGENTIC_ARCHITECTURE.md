@@ -1,8 +1,11 @@
 # Agentic Architecture Guide (AI Features)
 
-> **Scope**: Multi-agent orchestration using LangGraph for AI-powered features (chat, query assistant)
+> **Scope**: LangGraph StateGraph-based multi-agent system for AI-powered features (chat, query assistant)
+> **Implementation**: Each agent is a StateGraph with nodes for processing steps
 
-**Flow**: `Request → Orchestrator → [Agents] → Aggregator → Response`
+**Flow**: `Request → Orchestrator Graph → [Agent Graphs] → Aggregator → Response`
+
+**See [ARCHITECTURE.md](ARCHITECTURE.md) for complete system architecture.**
 
 ---
 
@@ -28,10 +31,24 @@ If NO, stop. You're breaking the pattern.
 
 ## Core Principles
 
-### 1. Single Responsibility
-**Rule**: One job per agent. If you need "and" or "or" to describe it, split it.
+### 1. Graph-Based Architecture
+**Implementation**: Each agent is a `StateGraph` with nodes representing processing steps.
 
-### 2. State as Contract
+**Structure**:
+```python
+class EmailAgentGraph(BaseAgentGraph):
+    def build_graph(self) -> StateGraph:
+        graph = StateGraph(EmailState)
+        graph.add_node("validate_input", self.validate_input)
+        graph.add_node("process_with_llm", self.process_with_llm)
+        graph.add_conditional_edges("validate_input", self.route_decision)
+        return graph.compile()
+```
+
+### 2. Single Responsibility
+**Rule**: One job per agent graph. If you need "and" or "or" to describe it, split it.
+
+### 3. State as Contract
 **Rule**: Read what you need. Write only your field.
 
 **Field Ownership**:
@@ -179,16 +196,29 @@ API Route → ChatService → LangGraph (Orchestrator → Agents → Aggregator)
 
 ## Extension Template
 
-### Adding Processing Agent
+### Adding Processing Agent Graph
 
-1. **Create** `app/agentic/agents/{name}.py`
-2. **Update** `app/agentic/state.py`: Add `{name}_output: Optional[str]`
-3. **Register** in `app/agentic/graph.py`: Add node, edges, routing
-4. **Update** `prompts/orchestrator.md`: Document when to use
-5. **Update** `app/agentic/aggregator.py`: Handle new output
-6. **Create** `prompts/{name}.md`: Agent instructions
-7. **Ensure** agent appends to `executed_agents` list
-8. **Write tests** in `tests/test_agents.py`
+1. **Create** `app/agentic/graphs/{name}_graph.py`:
+   ```python
+   from .base_graph import BaseAgentGraph
+   from langgraph.graph import StateGraph
+   
+   class MyAgentGraph(BaseAgentGraph):
+       def build_graph(self) -> StateGraph:
+           graph = StateGraph(AgentState)
+           graph.add_node("process", self.process_node)
+           graph.set_entry_point("process")
+           graph.add_edge("process", END)
+           return graph.compile()
+   ```
+
+2. **Update** `app/agentic/states/agent_state.py`: Add `{name}_output: Optional[str]`
+3. **Register** in `app/agentic/__init__.py`: Add to orchestrator routing
+4. **Update** `app/agentic/prompts/orchestrator.md`: Document when to use
+5. **Update aggregator** in orchestrator: Handle new output
+6. **Create** `app/agentic/prompts/{name}.md`: Agent instructions
+7. **Ensure** nodes append to `executed_agents` list
+8. **Write tests** in `tests/test_{name}_integration.py`
 9. **Run tests**: All tests must pass before merging (`pytest`)
 
 ### Adding Retrieval Agent
@@ -217,15 +247,18 @@ Same steps, but:
 
 ## Self-Check Checklist
 
-**Agent Code**:
-- [ ] One clear job (one sentence description)
-- [ ] Reads from state, writes ONE field
-- [ ] Appends agent name to `executed_agents` list
+**Agent Graph Code**:
+- [ ] Extends `BaseAgentGraph` abstract class
+- [ ] Implements `build_graph()` method
+- [ ] Uses `StateGraph` with proper state TypedDict
+- [ ] Nodes read from state, write ONE output field
+- [ ] Nodes append agent name to `executed_agents` list
 - [ ] No references to other agents' outputs
 - [ ] Processing agents use retrieval context
 - [ ] Retrieval agents don't call LLM
 - [ ] Retrieval agents use `get_memory_driver()`
-- [ ] Prompts from files, not hardcoded
+- [ ] Prompts loaded from `app/agentic/prompts/` files
+- [ ] Uses decorators (`@retry_on_failure`, `@log_node_execution`)
 - [ ] All tests pass (`pytest` runs successfully)
 
 **Orchestrator**:
@@ -250,4 +283,7 @@ Same steps, but:
 
 ---
 
-**Related**: See [CONSTITUTION.md](CONSTITUTION.md) for universal principles and [TRADITIONAL_ARCHITECTURE.md](TRADITIONAL_ARCHITECTURE.md) for non-agentic features.
+**Related**: 
+- [CONSTITUTION.md](CONSTITUTION.md) - Universal principles and decision framework
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Complete system architecture
+- [FEATURES.md](FEATURES.md) - Feature list and roadmap

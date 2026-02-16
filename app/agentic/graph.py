@@ -3,103 +3,44 @@ LangGraph Workflow Definition with LangSmith Tracing
 
 This file constructs the LangGraph with:
 - Orchestrator router node
-- Specialized agent nodes
+- Specialized agent graph nodes (all graph-based now)
 - Aggregator node
 - Conditional routing logic
 - Memory handled by AutoMem service (no LangGraph checkpointing)
 - LangSmith tracing for monitoring and debugging
+
+Following SOLID principles:
+- Single Responsibility: Only graph construction logic here
+- Other concerns (routing, wrappers, config) are in separate modules
+
+Architecture:
+All agents are now graph-based for consistency and scalability:
+- Retrieval Agents: KnowledgeAgentGraph, MemoryAgentGraph
+- Processing Agents: GeneralAgentGraph, ResearchAgentGraph, WritingAgentGraph, CodeAgentGraph
+- Integration Agents: EmailAgentGraph
 """
 
-from typing import Literal, Dict, Any
 from langgraph.graph import StateGraph, END
 
 from config.settings import get_settings
-from .state import AgentState
+from .states import AgentState
 from .orchestrator import orchestrator_router
-from .agents import research_agent, writing_agent, code_agent, general_agent, knowledge_agent, memory_agent
 from .aggregator import aggregator
+from .config import RETRIEVAL_AGENTS, PROCESSING_AGENTS, INTEGRATION_AGENTS
+from .routing import route_from_orchestrator, route_from_agent
+from .wrappers import (
+    email_agent_graph_wrapper,
+    general_agent_graph_wrapper,
+    research_agent_graph_wrapper,
+    writing_agent_graph_wrapper,
+    code_agent_graph_wrapper,
+    knowledge_agent_graph_wrapper,
+    memory_agent_graph_wrapper,
+    passthrough_output
+)
 
 
 settings = get_settings()
-
-# Define agent types
-RETRIEVAL_AGENTS = {"knowledge", "memory"}
-PROCESSING_AGENTS = {"general", "research", "writing", "code"}
-
-
-def route_from_orchestrator(state: AgentState) -> str:
-    """
-    Route from orchestrator to the first agent or aggregator.
-    
-    Priority order:
-    1. Retrieval agents first (knowledge, memory) - they provide context
-    2. Processing agents second (general, research, writing, code)
-    3. Aggregator if no agents selected
-    """
-    selected = state.get("selected_agents", [])
-    if not selected:
-        return "aggregator"
-    
-    # Check for retrieval agents first (they should execute before processing)
-    for agent in ["knowledge", "memory"]:
-        if agent in selected:
-            return agent
-    
-    # Then check for processing agents
-    for agent in ["general", "research", "writing", "code"]:
-        if agent in selected:
-            return agent
-    
-    return "aggregator"
-
-
-def route_from_agent(state: AgentState) -> str:
-    """
-    Route from current agent to the next agent or to aggregation.
-    
-    Returns the next agent in priority order, or routes to aggregation.
-    Priority: retrieval agents → processing agents → aggregation
-    """
-    selected = state.get("selected_agents", [])
-    
-    # Get list of agents that have already executed from state tracking
-    executed = set(state.get("executed_agents", []))
-    
-    # Find next agent to execute (in priority order)
-    # Retrieval agents first
-    for agent in ["knowledge", "memory"]:
-        if agent in selected and agent not in executed:
-            return agent
-    
-    # Then processing agents
-    for agent in ["general", "research", "writing", "code"]:
-        if agent in selected and agent not in executed:
-            return agent
-    
-    # All selected agents have executed, check if we need aggregation
-    processing_agents_selected = [a for a in selected if a in PROCESSING_AGENTS]
-    
-    # If exactly 1 processing agent, skip aggregator (passthrough)
-    if len(processing_agents_selected) == 1:
-        return "passthrough"
-    
-    # Otherwise, aggregate
-    return "aggregator"
-
-
-def passthrough_output(state: AgentState) -> Dict[str, Any]:
-    """
-    Pass single processing agent output directly as final output.
-    Skips unnecessary aggregator LLM call.
-    """
-    # Find which processing agent ran
-    for agent_name in PROCESSING_AGENTS:
-        output = state.get(f"{agent_name}_output")
-        if output:
-            return {"final_output": output}
-    
-    # Fallback (shouldn't happen)
-    return {"final_output": "No response generated."}
 
 
 def build_graph():
@@ -115,15 +56,16 @@ def build_graph():
     # Create graph with shared state
     workflow = StateGraph(AgentState)
     
-    # Add nodes
+    # Add nodes - All graph-based agents now
     workflow.add_node("orchestrator", orchestrator_router)
-    workflow.add_node("knowledge", knowledge_agent)
-    workflow.add_node("memory", memory_agent)
-    workflow.add_node("general", general_agent)
-    workflow.add_node("research", research_agent)
-    workflow.add_node("writing", writing_agent)
-    workflow.add_node("code", code_agent)
-    workflow.add_node("passthrough", passthrough_output)  # NEW: Direct output
+    workflow.add_node("knowledge", knowledge_agent_graph_wrapper)  # Graph-based
+    workflow.add_node("memory", memory_agent_graph_wrapper)  # Graph-based
+    workflow.add_node("general", general_agent_graph_wrapper)  # Graph-based
+    workflow.add_node("research", research_agent_graph_wrapper)  # Graph-based
+    workflow.add_node("writing", writing_agent_graph_wrapper)  # Graph-based
+    workflow.add_node("code", code_agent_graph_wrapper)  # Graph-based
+    workflow.add_node("email", email_agent_graph_wrapper)  # Graph-based
+    workflow.add_node("passthrough", passthrough_output)  # Direct output for single agent
     workflow.add_node("aggregator", aggregator)
     
     # Set entry point
@@ -140,13 +82,14 @@ def build_graph():
             "research": "research",
             "writing": "writing",
             "code": "code",
+            "email": "email",
             "aggregator": "aggregator"
         }
     )
     
     # Each agent routes to the next agent or to aggregation
-    # This ensures sequential execution: retrieval → processing → aggregation
-    for agent in ["knowledge", "memory", "general", "research", "writing", "code"]:
+    # This ensures sequential execution: retrieval → processing → integration → aggregation
+    for agent in ["knowledge", "memory", "general", "research", "writing", "code", "email"]:
         workflow.add_conditional_edges(
             agent,
             route_from_agent,
@@ -157,6 +100,7 @@ def build_graph():
                 "research": "research",
                 "writing": "writing",
                 "code": "code",
+                "email": "email",
                 "passthrough": "passthrough",
                 "aggregator": "aggregator"
             }

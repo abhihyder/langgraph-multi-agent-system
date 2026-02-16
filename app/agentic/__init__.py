@@ -10,6 +10,6 @@ This module contains the multi-agent orchestration system:
 """
 
 from .graph import app
-from .state import AgentState
+from .states import AgentState
 
 __all__ = ["app", "AgentState"]

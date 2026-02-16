@@ -13,5 +13,5 @@ def load_prompt(filename: str) -> str:
     Returns:
         Content of the prompt file
     """
-    with open(f"prompts/{filename}", "r") as f:
+    with open(f"app/agentic/prompts/{filename}", "r") as f:
         return f.read()
