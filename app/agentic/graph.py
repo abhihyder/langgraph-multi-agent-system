@@ -71,7 +71,8 @@ def build_graph():
     # Set entry point
     workflow.set_entry_point("orchestrator")
     
-    # Route from orchestrator to first agent (retrieval agents have priority)
+    # Orchestrator routes to first agent in priority order or directly to aggregator
+    # Priority: retrieval (knowledge, memory) → processing (general, research, writing, code) → integration (email)
     workflow.add_conditional_edges(
         "orchestrator",
         route_from_orchestrator,
@@ -87,9 +88,11 @@ def build_graph():
         }
     )
     
-    # Each agent routes to the next agent or to aggregation
+    # Each agent routes to the next agent in sequence or to aggregation
     # This ensures sequential execution: retrieval → processing → integration → aggregation
-    for agent in ["knowledge", "memory", "general", "research", "writing", "code", "email"]:
+    # All agents use the same routing function that enforces priority order
+    all_agents = ["knowledge", "memory", "general", "research", "writing", "code", "email"]
+    for agent in all_agents:
         workflow.add_conditional_edges(
             agent,
             route_from_agent,

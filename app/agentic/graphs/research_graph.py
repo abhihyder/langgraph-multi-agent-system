@@ -88,16 +88,20 @@ class ResearchAgentGraph(BaseAgentGraph):
                 context_parts.append(f"=== USER HISTORY ===\n{memory_output}")
             
             context = "\n\n".join(context_parts) if context_parts else "No additional context available."
-            state["prepared_context"] = context
             logger.info(f"Research context prepared ({len(context)} chars)")
             
-            return state
+            return {
+                **state,
+                "prepared_context": context
+            }
             
         except Exception as e:
             logger.error(f"Context preparation failed: {str(e)}")
-            state["error"] = f"Failed to prepare context: {str(e)}"
-            state["error_type"] = "ContextPreparationError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to prepare context: {str(e)}",
+                "error_type": "ContextPreparationError"
+            }
     
     @log_node_execution(NodeType.LLM)
     @retry_on_failure(max_retries=3)
@@ -135,15 +139,19 @@ Provide a factual, well-researched response with analytical depth.""")
             content = str(response.content) if hasattr(response, "content") else str(response)
             
             logger.info(f"Research response generated ({len(content)} chars)")
-            state["research_response"] = content
             
-            return state
+            return {
+                **state,
+                "research_response": content
+            }
             
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}")
-            state["error"] = f"Failed to generate response: {str(e)}"
-            state["error_type"] = "LLMGenerationError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to generate response: {str(e)}",
+                "error_type": "LLMGenerationError"
+            }
     
     @log_node_execution(NodeType.PROCESSING)
     def format_output_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -153,21 +161,24 @@ Provide a factual, well-researched response with analytical depth.""")
         try:
             response = state.get("research_response", "")
             
-            state["research_output"] = response
-            state["formatted_result"] = {
-                "success": True,
-                "output": response,
-                "agent": "research"
-            }
-            
             logger.info("Research agent output formatted successfully")
-            return state
+            return {
+                **state,
+                "research_output": response,
+                "formatted_result": {
+                    "success": True,
+                    "output": response,
+                    "agent": "research"
+                }
+            }
             
         except Exception as e:
             logger.error(f"Output formatting failed: {str(e)}")
-            state["error"] = f"Failed to format output: {str(e)}"
-            state["error_type"] = "FormattingError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to format output: {str(e)}",
+                "error_type": "FormattingError"
+            }
     
     @log_node_execution(NodeType.ERROR)
     def error_handler_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -177,15 +188,16 @@ Provide a factual, well-researched response with analytical depth.""")
         
         output = f"❌ Research agent error:\n\n{error_type}: {error_msg}"
         
-        state["research_output"] = output
-        state["formatted_result"] = {
-            "success": False,
-            "error": error_msg,
-            "error_type": error_type,
-            "agent": "research"
+        return {
+            **state,
+            "research_output": output,
+            "formatted_result": {
+                "success": False,
+                "error": error_msg,
+                "error_type": error_type,
+                "agent": "research"
+            }
         }
-        
-        return state
     
     def check_for_errors(self, state: Dict[str, Any]) -> str:
         """Router: Check if errors occurred"""

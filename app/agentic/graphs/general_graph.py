@@ -94,29 +94,36 @@ class GeneralAgentGraph(BaseAgentGraph):
         logger.info("Preparing context for general agent")
         
         try:
-            # Get context from retrieval agents
-            knowledge_output = state.get("knowledge_output")
-            memory_output = state.get("memory_output")
+            # Get context from retrieval agents (these come from orchestrator state)
+            knowledge_output = state.get("knowledge_output", "")
+            memory_output = state.get("memory_output", "")
+            
+            logger.info(f"Retrieved context - Knowledge: {len(knowledge_output) if knowledge_output else 0} chars, Memory: {len(memory_output) if memory_output else 0} chars")
             
             # Build context section
             context_parts = []
-            if knowledge_output:
+            if knowledge_output and knowledge_output.strip():
                 context_parts.append(f"Knowledge Base Context:\n{knowledge_output}")
-            if memory_output:
+            if memory_output and memory_output.strip():
                 context_parts.append(f"Conversation Memory:\n{memory_output}")
             
             context = "\n\n".join(context_parts) if context_parts else "No additional context available."
             
-            state["prepared_context"] = context
-            logger.info(f"Context prepared ({len(context)} chars)")
+            logger.info(f"Context prepared: {len(context)} chars total")
             
-            return state
+            # Return updated state with prepared context
+            return {
+                **state,
+                "prepared_context": context
+            }
             
         except Exception as e:
             logger.error(f"Context preparation failed: {str(e)}")
-            state["error"] = f"Failed to prepare context: {str(e)}"
-            state["error_type"] = "ContextPreparationError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to prepare context: {str(e)}",
+                "error_type": "ContextPreparationError"
+            }
     
     @log_node_execution(NodeType.LLM)
     @retry_on_failure(max_retries=3)
@@ -128,6 +135,9 @@ class GeneralAgentGraph(BaseAgentGraph):
             user_input = state["user_input"]
             intent = state.get("intent", "")
             context = state.get("prepared_context", "")
+            
+            logger.info(f"generate_response_node: prepared_context length = {len(context)} chars")
+            logger.info(f"generate_response_node: prepared_context content = {context[:200] if context else 'EMPTY'}")
             
             # Load general prompt
             general_prompt = load_prompt("general.md")
@@ -155,15 +165,19 @@ class GeneralAgentGraph(BaseAgentGraph):
             content = str(response.content) if hasattr(response, "content") else str(response)
             
             logger.info(f"General response generated ({len(content)} chars)")
-            state["general_response"] = content
             
-            return state
+            return {
+                **state,
+                "general_response": content
+            }
             
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}")
-            state["error"] = f"Failed to generate response: {str(e)}"
-            state["error_type"] = "LLMGenerationError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to generate response: {str(e)}",
+                "error_type": "LLMGenerationError"
+            }
     
     @log_node_execution(NodeType.PROCESSING)
     def format_output_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -174,21 +188,25 @@ class GeneralAgentGraph(BaseAgentGraph):
             general_response = state.get("general_response", "")
             
             # Format output
-            state["general_output"] = general_response
-            state["formatted_result"] = {
-                "success": True,
-                "output": general_response,
-                "agent": "general"
-            }
-            
             logger.info("General agent output formatted successfully")
-            return state
+            
+            return {
+                **state,
+                "general_output": general_response,
+                "formatted_result": {
+                    "success": True,
+                    "output": general_response,
+                    "agent": "general"
+                }
+            }
             
         except Exception as e:
             logger.error(f"Output formatting failed: {str(e)}")
-            state["error"] = f"Failed to format output: {str(e)}"
-            state["error_type"] = "FormattingError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to format output: {str(e)}",
+                "error_type": "FormattingError"
+            }
     
     @log_node_execution(NodeType.ERROR)
     def error_handler_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -200,15 +218,16 @@ class GeneralAgentGraph(BaseAgentGraph):
         
         output = f"❌ General agent error:\n\n{error_type}: {error_msg}"
         
-        state["general_output"] = output
-        state["formatted_result"] = {
-            "success": False,
-            "error": error_msg,
-            "error_type": error_type,
-            "agent": "general"
+        return {
+            **state,
+            "general_output": output,
+            "formatted_result": {
+                "success": False,
+                "error": error_msg,
+                "error_type": error_type,
+                "agent": "general"
+            }
         }
-        
-        return state
     
     def check_for_errors(self, state: Dict[str, Any]) -> str:
         """Router: Check if errors occurred"""

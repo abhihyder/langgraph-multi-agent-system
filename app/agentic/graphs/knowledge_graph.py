@@ -114,9 +114,11 @@ class KnowledgeAgentGraph(BaseAgentGraph):
             
         except Exception as e:
             logger.error(f"Knowledge retrieval failed: {str(e)}")
-            state["error"] = f"Failed to retrieve knowledge: {str(e)}"
-            state["error_type"] = "KnowledgeRetrievalError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to retrieve knowledge: {str(e)}",
+                "error_type": "KnowledgeRetrievalError"
+            }
     
     @log_node_execution(NodeType.PROCESSING)
     def format_output_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -128,19 +130,19 @@ class KnowledgeAgentGraph(BaseAgentGraph):
             knowledge_raw = self._knowledge_raw
             knowledge_found = self._knowledge_found
             
-            if knowledge_found and knowledge_raw:
-                state["knowledge_output"] = knowledge_raw
-            else:
-                state["knowledge_output"] = None
-            
             logger.info("Knowledge agent output formatted successfully")
-            return state
+            return {
+                **state,
+                "knowledge_output": knowledge_raw if (knowledge_found and knowledge_raw) else None
+            }
             
         except Exception as e:
             logger.error(f"Output formatting failed: {str(e)}")
-            state["error"] = f"Failed to format output: {str(e)}"
-            state["error_type"] = "FormattingError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to format output: {str(e)}",
+                "error_type": "FormattingError"
+            }
     
     @log_node_execution(NodeType.ERROR)
     def error_handler_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -150,14 +152,16 @@ class KnowledgeAgentGraph(BaseAgentGraph):
         
         logger.error(f"Knowledge agent error: {error_type} - {error_msg}")
         
-        state["knowledge_output"] = None
-        state["formatted_result"] = {
-            "success": False,
-            "error": error_msg,
-            "error_type": error_type,
-            "agent": "knowledge"
+        return {
+            **state,
+            "knowledge_output": None,
+            "formatted_result": {
+                "success": False,
+                "error": error_msg,
+                "error_type": error_type,
+                "agent": "knowledge"
+            }
         }
-        
         return state
     
     def check_for_errors(self, state: Dict[str, Any]) -> str:

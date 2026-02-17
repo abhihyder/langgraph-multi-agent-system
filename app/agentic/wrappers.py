@@ -77,6 +77,7 @@ def email_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.info(f"Email Agent Graph: Completed. Output length: {len(email_output)}")
         
         return {
+            **state,
             "email_output": email_output,
             "executed_agents": executed + ["email"]
         }
@@ -87,6 +88,7 @@ def email_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         
         executed = state.get("executed_agents", [])
         return {
+            **state,
             "email_output": f"Error: Email agent failed - {str(e)}",
             "executed_agents": executed + ["email"]
         }
@@ -105,8 +107,9 @@ def general_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         
         logger.info(f"General Agent Graph: Completed. Output length: {len(general_output)}")
         
+        # Return full result with updated executed_agents
         return {
-            "general_output": general_output,
+            **result,
             "executed_agents": executed + ["general"]
         }
     
@@ -114,6 +117,7 @@ def general_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.error(f"General Agent Graph wrapper failed: {str(e)}")
         executed = state.get("executed_agents", [])
         return {
+            **state,
             "general_output": f"Error: General agent failed - {str(e)}",
             "executed_agents": executed + ["general"]
         }
@@ -133,7 +137,7 @@ def research_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.info(f"Research Agent Graph: Completed. Output length: {len(research_output)}")
         
         return {
-            "research_output": research_output,
+            **result,
             "executed_agents": executed + ["research"]
         }
     
@@ -141,6 +145,7 @@ def research_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.error(f"Research Agent Graph wrapper failed: {str(e)}")
         executed = state.get("executed_agents", [])
         return {
+            **state,
             "research_output": f"Error: Research agent failed - {str(e)}",
             "executed_agents": executed + ["research"]
         }
@@ -160,7 +165,7 @@ def writing_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.info(f"Writing Agent Graph: Completed. Output length: {len(writing_output)}")
         
         return {
-            "writing_output": writing_output,
+            **result,
             "executed_agents": executed + ["writing"]
         }
     
@@ -168,6 +173,7 @@ def writing_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.error(f"Writing Agent Graph wrapper failed: {str(e)}")
         executed = state.get("executed_agents", [])
         return {
+            **state,
             "writing_output": f"Error: Writing agent failed - {str(e)}",
             "executed_agents": executed + ["writing"]
         }
@@ -187,7 +193,7 @@ def code_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.info(f"Code Agent Graph: Completed. Output length: {len(code_output)}")
         
         return {
-            "code_output": code_output,
+            **result,
             "executed_agents": executed + ["code"]
         }
     
@@ -195,6 +201,7 @@ def code_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.error(f"Code Agent Graph wrapper failed: {str(e)}")
         executed = state.get("executed_agents", [])
         return {
+            **state,
             "code_output": f"Error: Code agent failed - {str(e)}",
             "executed_agents": executed + ["code"]
         }
@@ -214,7 +221,7 @@ def knowledge_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.info(f"Knowledge Agent Graph: Completed")
         
         return {
-            "knowledge_output": knowledge_output,
+            **result,
             "executed_agents": executed + ["knowledge"]
         }
     
@@ -222,6 +229,7 @@ def knowledge_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.error(f"Knowledge Agent Graph wrapper failed: {str(e)}")
         executed = state.get("executed_agents", [])
         return {
+            **state,
             "knowledge_output": None,
             "executed_agents": executed + ["knowledge"]
         }
@@ -241,7 +249,7 @@ def memory_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.info(f"Memory Agent Graph: Completed")
         
         return {
-            "memory_output": memory_output,
+            **result,
             "executed_agents": executed + ["memory"]
         }
     
@@ -249,6 +257,7 @@ def memory_agent_graph_wrapper(state: AgentState) -> Dict[str, Any]:
         logger.error(f"Memory Agent Graph wrapper failed: {str(e)}")
         executed = state.get("executed_agents", [])
         return {
+            **state,
             "memory_output": None,
             "executed_agents": executed + ["memory"]
         }
@@ -274,8 +283,8 @@ def passthrough_output(state: AgentState) -> Dict[str, Any]:
         output = state.get(f"{agent_name}_output")
         if output:
             logger.info(f"Passing through output from {agent_name}")
-            return {"final_output": output}
+            return {**state, "final_output": output}
     
     # Fallback (shouldn't happen)
     logger.warning("Passthrough called but no processing agent output found")
-    return {"final_output": "No response generated."}
+    return {**state, "final_output": "No response generated."}

@@ -100,16 +100,20 @@ User Request: {user_input}
             if memory_output:
                 context += f"\n\n=== PREVIOUS CONTEXT ===\n{memory_output}"
             
-            state["prepared_context"] = context
             logger.info(f"Code context prepared ({len(context)} chars)")
             
-            return state
+            return {
+                **state,
+                "prepared_context": context
+            }
             
         except Exception as e:
             logger.error(f"Context preparation failed: {str(e)}")
-            state["error"] = f"Failed to prepare context: {str(e)}"
-            state["error_type"] = "ContextPreparationError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to prepare context: {str(e)}",
+                "error_type": "ContextPreparationError"
+            }
     
     @log_node_execution(NodeType.LLM)
     @retry_on_failure(max_retries=3)
@@ -141,15 +145,19 @@ Generate production-quality, well-documented code that follows best practices an
             content = str(response.content) if hasattr(response, "content") else str(response)
             
             logger.info(f"Code response generated ({len(content)} chars)")
-            state["code_response"] = content
             
-            return state
+            return {
+                **state,
+                "code_response": content
+            }
             
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}")
-            state["error"] = f"Failed to generate response: {str(e)}"
-            state["error_type"] = "LLMGenerationError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to generate response: {str(e)}",
+                "error_type": "LLMGenerationError"
+            }
     
     @log_node_execution(NodeType.PROCESSING)
     def format_output_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -159,21 +167,24 @@ Generate production-quality, well-documented code that follows best practices an
         try:
             response = state.get("code_response", "")
             
-            state["code_output"] = response
-            state["formatted_result"] = {
-                "success": True,
-                "output": response,
-                "agent": "code"
-            }
-            
             logger.info("Code agent output formatted successfully")
-            return state
+            return {
+                **state,
+                "code_output": response,
+                "formatted_result": {
+                    "success": True,
+                    "output": response,
+                    "agent": "code"
+                }
+            }
             
         except Exception as e:
             logger.error(f"Output formatting failed: {str(e)}")
-            state["error"] = f"Failed to format output: {str(e)}"
-            state["error_type"] = "FormattingError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to format output: {str(e)}",
+                "error_type": "FormattingError"
+            }
     
     @log_node_execution(NodeType.ERROR)
     def error_handler_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -183,15 +194,16 @@ Generate production-quality, well-documented code that follows best practices an
         
         output = f"❌ Code agent error:\n\n{error_type}: {error_msg}"
         
-        state["code_output"] = output
-        state["formatted_result"] = {
-            "success": False,
-            "error": error_msg,
-            "error_type": error_type,
-            "agent": "code"
+        return {
+            **state,
+            "code_output": output,
+            "formatted_result": {
+                "success": False,
+                "error": error_msg,
+                "error_type": error_type,
+                "agent": "code"
+            }
         }
-        
-        return state
     
     def check_for_errors(self, state: Dict[str, Any]) -> str:
         """Router: Check if errors occurred"""

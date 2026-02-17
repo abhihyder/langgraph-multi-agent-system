@@ -154,9 +154,11 @@ class MemoryAgentGraph(BaseAgentGraph):
             
         except Exception as e:
             logger.error(f"Memory retrieval failed: {str(e)}")
-            state["error"] = f"Failed to retrieve memories: {str(e)}"
-            state["error_type"] = "MemoryRetrievalError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to retrieve memories: {str(e)}",
+                "error_type": "MemoryRetrievalError"
+            }
     
     @log_node_execution(NodeType.PROCESSING)
     def format_output_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -169,9 +171,11 @@ class MemoryAgentGraph(BaseAgentGraph):
             memory_found = self._memory_found
             
             if not memory_found or not all_memories:
-                state["memory_output"] = None
                 logger.info("No memories to format")
-                return state
+                return {
+                    **state,
+                    "memory_output": None
+                }
             
             # Format memories by type
             sections = []
@@ -182,8 +186,14 @@ class MemoryAgentGraph(BaseAgentGraph):
                 sections.append("=== RECENT CONVERSATION ===")
                 for i, mem in enumerate(all_memories[:recent_count]):
                     content = mem.get("memory", {}).get("content") or mem.get("content", "")
-                    role = mem.get("memory", {}).get("role", "user")
-                    sections.append(f"[{role}] {content}")
+                    # Try multiple paths to get role
+                    role = (mem.get("memory", {}).get("role") or 
+                           mem.get("role") or 
+                           mem.get("memory", {}).get("metadata", {}).get("role") or
+                           "user")
+                    # Format role for display
+                    display_role = "AI" if role in ["assistant", "ai", "system"] else "user"
+                    sections.append(f"[{display_role}] {content}")
             
             # Short-term memories
             short_term_count = self._short_term_count
@@ -207,16 +217,19 @@ class MemoryAgentGraph(BaseAgentGraph):
             
             memory_output = "\n".join(sections)
             
-            state["memory_output"] = memory_output
-            
             logger.info("Memory agent output formatted successfully")
-            return state
+            return {
+                **state,
+                "memory_output": memory_output
+            }
             
         except Exception as e:
             logger.error(f"Output formatting failed: {str(e)}")
-            state["error"] = f"Failed to format output: {str(e)}"
-            state["error_type"] = "FormattingError"
-            return state
+            return {
+                **state,
+                "error": f"Failed to format output: {str(e)}",
+                "error_type": "FormattingError"
+            }
     
     @log_node_execution(NodeType.ERROR)
     def error_handler_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -226,15 +239,16 @@ class MemoryAgentGraph(BaseAgentGraph):
         
         logger.error(f"Memory agent error: {error_type} - {error_msg}")
         
-        state["memory_output"] = None
-        state["formatted_result"] = {
-            "success": False,
-            "error": error_msg,
-            "error_type": error_type,
-            "agent": "memory"
+        return {
+            **state,
+            "memory_output": None,
+            "formatted_result": {
+                "success": False,
+                "error": error_msg,
+                "error_type": error_type,
+                "agent": "memory"
+            }
         }
-        
-        return state
     
     def check_for_errors(self, state: Dict[str, Any]) -> str:
         """Router: Check if errors occurred"""
