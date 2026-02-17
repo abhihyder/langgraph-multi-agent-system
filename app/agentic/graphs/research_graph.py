@@ -142,7 +142,7 @@ Provide a factual, well-researched response with analytical depth.""")
             
             return {
                 **state,
-                "research_response": content
+                "research_output": content
             }
             
         except Exception as e:
@@ -159,15 +159,14 @@ Provide a factual, well-researched response with analytical depth.""")
         logger.info("Formatting Research agent output")
         
         try:
-            response = state.get("research_response", "")
+            research_output = state.get("research_output", "")
             
             logger.info("Research agent output formatted successfully")
             return {
                 **state,
-                "research_output": response,
                 "formatted_result": {
                     "success": True,
-                    "output": response,
+                    "output": research_output,
                     "agent": "research"
                 }
             }

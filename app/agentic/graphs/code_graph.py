@@ -148,7 +148,7 @@ Generate production-quality, well-documented code that follows best practices an
             
             return {
                 **state,
-                "code_response": content
+                "code_output": content
             }
             
         except Exception as e:
@@ -165,15 +165,14 @@ Generate production-quality, well-documented code that follows best practices an
         logger.info("Formatting Code agent output")
         
         try:
-            response = state.get("code_response", "")
+            code_output = state.get("code_output", "")
             
             logger.info("Code agent output formatted successfully")
             return {
                 **state,
-                "code_output": response,
                 "formatted_result": {
                     "success": True,
-                    "output": response,
+                    "output": code_output,
                     "agent": "code"
                 }
             }

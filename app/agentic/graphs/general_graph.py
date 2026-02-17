@@ -168,7 +168,7 @@ class GeneralAgentGraph(BaseAgentGraph):
             
             return {
                 **state,
-                "general_response": content
+                "general_output": content
             }
             
         except Exception as e:
@@ -185,17 +185,16 @@ class GeneralAgentGraph(BaseAgentGraph):
         logger.info("Formatting general agent output")
         
         try:
-            general_response = state.get("general_response", "")
+            general_output = state.get("general_output", "")
             
             # Format output
             logger.info("General agent output formatted successfully")
             
             return {
                 **state,
-                "general_output": general_response,
                 "formatted_result": {
                     "success": True,
-                    "output": general_response,
+                    "output": general_output,
                     "agent": "general"
                 }
             }

@@ -43,10 +43,6 @@ class AgentState(TypedDict):
     
     # Internal processing fields (intermediate states within agent graphs)
     prepared_context: Optional[str]  # Context prepared by processing agents
-    general_response: Optional[str]   # Intermediate response from general agent
-    research_response: Optional[str]  # Intermediate response from research agent
-    writing_response: Optional[str]   # Intermediate response from writing agent
-    code_response: Optional[str]      # Intermediate response from code agent
     
     # Control fields
     selected_agents: List[str]

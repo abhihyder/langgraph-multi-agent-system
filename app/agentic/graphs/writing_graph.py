@@ -147,7 +147,7 @@ Create clear, well-structured content that addresses the user's needs with profe
             
             return {
                 **state,
-                "writing_response": content
+                "writing_output": content
             }
             
         except Exception as e:
@@ -164,15 +164,14 @@ Create clear, well-structured content that addresses the user's needs with profe
         logger.info("Formatting Writing agent output")
         
         try:
-            response = state.get("writing_response", "")
+            writing_output = state.get("writing_output", "")
             
             logger.info("Writing agent output formatted successfully")
             return {
                 **state,
-                "writing_output": response,
                 "formatted_result": {
                     "success": True,
-                    "output": response,
+                    "output": writing_output,
                     "agent": "writing"
                 }
             }
