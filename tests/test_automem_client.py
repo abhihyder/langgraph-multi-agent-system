@@ -5,7 +5,7 @@ Testing memory storage, recall, and association functionality
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from app.core.automem_client import AutoMemClient, get_default_client
+from app.core.memory.automem_client import AutoMemClient, get_default_client
 
 
 @pytest.mark.unit

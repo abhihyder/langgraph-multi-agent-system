@@ -66,7 +66,8 @@ class ChatService:
             "code_output": None,
             "selected_agents": [],
             "executed_agents": [],
-            "final_output": None
+            "final_output": None,
+            "prepared_context": None
         }
         
         # Execute through orchestrator -> retrieval/processing agents -> aggregator

@@ -6,7 +6,7 @@ Adapter that wraps the existing AutoMem client to conform to the BaseMemoryDrive
 
 from typing import List, Dict, Any, Optional
 from .base import BaseMemoryDriver
-from ..automem_client import get_default_client
+from .automem_client import get_default_client
 
 
 class AutoMemDriver(BaseMemoryDriver):
